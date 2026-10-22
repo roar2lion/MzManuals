@@ -1,0 +1,4 @@
+# Built output: CI rebuilds it on every push
+site/
+__pycache__/
+*.pyc

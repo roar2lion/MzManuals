@@ -1,0 +1,199 @@
+{
+  "$schema": "../../schema/manual.schema.json",
+  "id": "authoring-guide",
+  "title": "Authoring Guide",
+  "subtitle": "How to write and publish a manual in this repository",
+  "description": "Every content block and inline syntax the builder supports, with live examples. Internal: kept off the live site.",
+  "version": "1.0",
+  "status": "final",
+  "updated": "2026-10-22",
+  "publish": false,
+  "order": 999,
+  "toc_depth": 2,
+  "sections": [
+    {
+      "id": "workflow",
+      "title": "Workflow",
+      "summary": "One JSON file per manual. The builder checks it, then renders the site and the PDF from it.",
+      "blocks": [
+        {
+          "type": "figure",
+          "id": "fig-pipeline",
+          "src": "authoring/pipeline.svg",
+          "alt": "JSON manuals go into build.py, which writes the HTML site and the PDF.",
+          "caption": "From JSON to site and PDF.",
+          "width": "80%"
+        },
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "Scaffold a manual: `python builder/build.py --new methodology \"Methodology\"`. It starts as a draft with `\"publish\": false`.",
+            "Write its sections in `content/manuals/methodology.json`. Your editor checks the file against `schema/manual.schema.json` as you type, through its `$schema` line.",
+            "Run `build.cmd`. It validates every manual, builds `site/` including drafts, prints the PDFs and opens the site.",
+            "When the manual is ready, set `\"publish\": true` and push. GitHub Actions rebuilds the live site and its PDFs."
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "important",
+          "text": "The build stops on any problem: a schema error, an unknown glossary term, a broken cross-reference, a missing figure file, or a published manual linking to an unpublished one. It lists every problem with its location."
+        }
+      ]
+    },
+    {
+      "id": "structure",
+      "title": "Manual structure",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "A manual has metadata, `sections`, optional `appendices` (lettered A, B, …) and an optional `changelog`. Sections nest to any depth through their own `sections` array and are numbered automatically, so reordering never means renumbering. A section `id` is its permanent anchor: links use it, so keep it stable when titles change."
+        },
+        {
+          "type": "table",
+          "id": "tab-meta",
+          "caption": "Manual metadata fields.",
+          "columns": ["Field", "Required", "Meaning"],
+          "rows": [
+            ["`id`", "yes", "Equals the file name; used in URLs and cross-references."],
+            ["`title`, `subtitle`, `description`", "title", "Shown on the page, the cover and the landing card."],
+            ["`version`, `updated`, `status`", "yes", "`status` is `draft`, `review` or `final`. Drafts get a banner online and on the PDF cover."],
+            ["`applies_to`", "no", "`PLEXOS`, `PyPSA` or both. Shown as badges. Sections and entries take it too."],
+            ["`publish`", "no", "`false` keeps the manual off the live site."],
+            ["`order`, `toc_depth`", "no", "Landing-page position; how many heading levels the contents list shows."]
+          ]
+        },
+        {
+          "type": "text",
+          "text": "A section can also carry `summary` (a lead paragraph) and `sources`, the workspace files it was written from. Sources print under the section, so a reader can see where a statement comes from."
+        }
+      ],
+      "sources": ["schema/manual.schema.json"]
+    },
+    {
+      "id": "inline",
+      "title": "Inline syntax",
+      "blocks": [
+        {
+          "type": "table",
+          "caption": "Inline markup inside any text field.",
+          "columns": ["Write", "Result"],
+          "rows": [
+            ["`**bold**`, `*italic*`", "**bold**, *italic*"],
+            ["`` `code` ``", "`MZ_Properties.csv`"],
+            ["`[text](https://…)`", "[an external link](https://pypsa.org)"],
+            ["`[[snsp]]` or `[[snsp|label]]`", "[[snsp]] links to the glossary, with the definition on hover."],
+            ["`[@#inline]`", "[@#inline] (same manual, section or labelled block)"],
+            ["`[@#tab-meta]`", "[@#tab-meta]"],
+            ["`[@other-manual#anchor|label]`", "A link into another manual."],
+            ["`` $`E = P \\cdot t`$ ``", "$`E = P \\cdot t`$ inline maths"]
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "note",
+          "title": "Backslashes and dollars",
+          "text": [
+            "JSON needs every backslash doubled, so TeX's `\\frac` is written `\\\\frac` in the file.",
+            "Inline maths uses GitLab's `` $`…`$ `` form, so a plain `$` (as in $/kW) is never taken for maths."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "blocks",
+      "title": "Content blocks",
+      "summary": "Each entry in a section's `blocks` has a `type`. Any block may have an `id`; tables, figures, diagrams and equations are then numbered and can be cited.",
+      "blocks": [
+        {"type": "text", "text": "`text` takes one string or an array of paragraphs. `list` takes strings or `{\"text\", \"items\"}` objects for nesting:"},
+        {
+          "type": "list",
+          "items": [
+            "A plain item",
+            {"text": "An item with children", "items": ["Child one", "Child two"]}
+          ]
+        },
+        {"type": "text", "text": "`entries` renders record cards, one per item, with the fields named in the block. This is the form for inputs, parameters and result variables:"},
+        {
+          "type": "entries",
+          "fields": [
+            {"key": "source", "label": "Source"},
+            {"key": "method", "label": "Method"}
+          ],
+          "items": [
+            {
+              "id": "entry-load",
+              "title": "Node hourly load",
+              "applies_to": ["PLEXOS", "PyPSA"],
+              "source": ["National annual demand (GWh)", "Province load shapes and shares"],
+              "method": "Each province's shape is scaled to its share of national demand; a node is the sum of its provinces."
+            }
+          ]
+        },
+        {"type": "text", "text": "`equation` takes KaTeX in `tex` and an optional `where` legend:"},
+        {
+          "type": "equation",
+          "id": "eq-energy",
+          "tex": "E_{n,y} = \\sum_{t \\in T_y} w_t \\, P_{n,t}",
+          "where": [
+            {"symbol": "E_{n,y}", "meaning": "Energy at node $`n`$ in year $`y`$", "unit": "MWh"},
+            {"symbol": "w_t", "meaning": "Weight of sampled hour $`t`$", "unit": "h"},
+            {"symbol": "P_{n,t}", "meaning": "Power at node $`n`$ in hour $`t`$", "unit": "MW"}
+          ]
+        },
+        {"type": "text", "text": "Cite it as [@#eq-energy]. `callout` has five kinds:"},
+        {"type": "callout", "kind": "assumption", "text": "Stated modelling assumptions."},
+        {"type": "callout", "kind": "limitation", "text": "Known limitations of the method."},
+        {"type": "callout", "kind": "warning", "text": "Things that commonly go wrong."},
+        {"type": "text", "text": "`diagram` draws Mermaid source; `figure` shows an image from `content/assets/`, such as [@#fig-pipeline]:"},
+        {
+          "type": "diagram",
+          "id": "fig-chain",
+          "caption": "Demand chain, as a Mermaid diagram.",
+          "mermaid": [
+            "flowchart LR",
+            "  A[AnnualDemandBuilder] --> B[ProvincialLoadProfileMaker]",
+            "  B --> C[ModelDataPopulator]",
+            "  C --> D[(PLEXOS data csvs)]"
+          ]
+        },
+        {"type": "text", "text": "`code` shows text as written:"},
+        {"type": "code", "lang": "json", "text": ["{\"type\": \"callout\", \"kind\": \"note\",", " \"text\": \"Short note.\"}"]}
+      ]
+    },
+    {
+      "id": "glossary-use",
+      "title": "Glossary",
+      "blocks": [
+        {
+          "type": "text",
+          "text": [
+            "Terms live once, in `content/glossary.json`, and every manual shares them. Reference a term as `[[id]]`. Online the term links to the glossary page, which lists the manuals that use it. Each PDF gets a *Terms used* appendix with only its own terms, so it stands on its own.",
+            "Add a term before you use it; an unknown id stops the build."
+          ]
+        }
+      ]
+    }
+  ],
+  "appendices": [
+    {
+      "id": "publishing",
+      "title": "Publishing setup",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "Create an empty GitHub repository and add it as this repo's `origin`.",
+            "In the repository's Settings → Pages, set Source to *GitHub Actions*.",
+            "Put the site address in `content/site.json` `base_url`, so links between manuals inside a PDF point to the live site.",
+            "Push to `main`. The workflow in `.github/workflows/pages.yml` validates, builds the site and the PDFs, and deploys them."
+          ]
+        }
+      ]
+    }
+  ],
+  "changelog": [
+    {"version": "1.0", "date": "2026-10-22", "changes": ["First version of the framework."]}
+  ]
+}

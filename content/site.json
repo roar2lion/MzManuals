@@ -1,0 +1,9 @@
+{
+  "$schema": "../schema/site.schema.json",
+  "title": "Mozambique Power System Model",
+  "tagline": "Methodology, definitions and guides for the PLEXOS model and its PyPSA benchmark",
+  "organisation": "",
+  "intro": "These manuals document how the Mozambique capacity-expansion and dispatch models are built, what their inputs and results mean, and how the PLEXOS model and its PyPSA benchmark relate. Each manual can be read online or downloaded as a PDF.",
+  "base_url": "",
+  "repo_url": ""
+}

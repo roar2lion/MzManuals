@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 120" width="640" height="120" font-family="Segoe UI, Arial, sans-serif" font-size="14">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5d6662"/></marker>
+  </defs>
+  <g fill="#e2f1ef" stroke="#0b6e69" stroke-width="1.5">
+    <rect x="10" y="35" width="130" height="50" rx="8"/>
+    <rect x="255" y="35" width="130" height="50" rx="8"/>
+    <rect x="500" y="10" width="130" height="40" rx="8"/>
+    <rect x="500" y="70" width="130" height="40" rx="8"/>
+  </g>
+  <g fill="#1d2321" text-anchor="middle">
+    <text x="75" y="65">JSON manuals</text>
+    <text x="320" y="65">build.py</text>
+    <text x="565" y="35">HTML site</text>
+    <text x="565" y="95">PDF</text>
+  </g>
+  <g stroke="#5d6662" stroke-width="1.5" fill="none" marker-end="url(#a)">
+    <path d="M140 60H252"/>
+    <path d="M385 55L497 32"/>
+    <path d="M385 65L497 88"/>
+  </g>
+</svg>

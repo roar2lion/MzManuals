@@ -1,0 +1,58 @@
+{
+  "$schema": "../schema/glossary.schema.json",
+  "terms": [
+    {
+      "id": "lt-plan",
+      "term": "LT Plan",
+      "expansion": "Long-Term Plan",
+      "aliases": ["LT"],
+      "applies_to": ["PLEXOS"],
+      "definition": "The PLEXOS long-term capacity-expansion phase: it chooses which generators, storage and lines to build and retire over the study horizon, solving on sampled chronology.",
+      "see_also": ["st-schedule", "myopic"]
+    },
+    {
+      "id": "st-schedule",
+      "term": "ST Schedule",
+      "expansion": "Short-Term Schedule",
+      "aliases": ["ST"],
+      "applies_to": ["PLEXOS"],
+      "definition": "The PLEXOS chronological dispatch phase. It runs hourly over whole years on the capacity built by the [[lt-plan]].",
+      "see_also": ["lt-plan"]
+    },
+    {
+      "id": "myopic",
+      "term": "Myopic planning",
+      "aliases": ["rolling horizon"],
+      "applies_to": ["PLEXOS", "PyPSA"],
+      "definition": "Capacity expansion solved block by block instead of over all periods at once (perfect foresight). Each block's builds are fixed for the blocks after it.",
+      "see_also": ["lt-plan"]
+    },
+    {
+      "id": "snsp",
+      "term": "SNSP",
+      "expansion": "System Non-Synchronous Penetration",
+      "applies_to": ["PLEXOS", "PyPSA"],
+      "definition": "The share of supply that comes from non-synchronous (inverter-based) sources, such as solar PV, wind, batteries and DC imports, in a given hour. The models cap it per synchronous area and system-wide."
+    },
+    {
+      "id": "node",
+      "term": "Node",
+      "applies_to": ["PLEXOS", "PyPSA"],
+      "definition": "A region of the network model with its own demand, generation and storage. Nodes are linked by internal corridors (Lines in PLEXOS, Links in PyPSA). Each node is made of one or more provinces, as set by the node resolution."
+    },
+    {
+      "id": "pes",
+      "term": "PES",
+      "applies_to": ["PLEXOS", "PyPSA"],
+      "definition": "The base scenario. In PLEXOS its data carries no scenario tag, and every other scenario is an overlay of `_S.{tag}` files on top of it.",
+      "see_also": ["des"]
+    },
+    {
+      "id": "des",
+      "term": "DES",
+      "applies_to": ["PLEXOS", "PyPSA"],
+      "definition": "Scenario whose annual demand follows the RETO-DES projections from 2030, ramping from the [[pes]] level after 2026. It uses PES data everywhere else.",
+      "see_also": ["pes"]
+    }
+  ]
+}

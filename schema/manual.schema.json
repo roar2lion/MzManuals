@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "manual.schema.json",
+  "title": "Manual",
+  "description": "One manual (methodology, definitions, ...). Rendered by builder/build.py into a site page and a PDF.",
+  "type": "object",
+  "required": ["id", "title", "version", "status", "updated", "sections"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {"type": "string"},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "description": "Must equal the file name without .json; used in URLs and cross-references."},
+    "title": {"type": "string", "minLength": 1},
+    "subtitle": {"type": "string"},
+    "description": {"type": "string", "description": "One or two sentences for the landing-page card."},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"},
+    "status": {"enum": ["draft", "review", "final"]},
+    "updated": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+    "authors": {"type": "array", "items": {"type": "string"}},
+    "audience": {"type": "string"},
+    "applies_to": {"$ref": "#/$defs/applies_to"},
+    "publish": {"type": "boolean", "description": "false keeps the manual off the live site (local builds show it with --drafts)."},
+    "order": {"type": "integer", "description": "Position on the landing page (ascending)."},
+    "toc_depth": {"type": "integer", "minimum": 1, "maximum": 4},
+    "sections": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/section"}},
+    "appendices": {"type": "array", "items": {"$ref": "#/$defs/section"}},
+    "changelog": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["version", "date", "changes"],
+        "additionalProperties": false,
+        "properties": {
+          "version": {"type": "string"},
+          "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+          "changes": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "rich": {
+      "description": "Inline-formatted text: one paragraph as a string, or several as an array of strings.",
+      "oneOf": [
+        {"type": "string"},
+        {"type": "array", "minItems": 1, "items": {"type": "string"}}
+      ]
+    },
+    "anchor": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+    "applies_to": {"type": "array", "uniqueItems": true, "items": {"enum": ["PLEXOS", "PyPSA"]}},
+    "section": {
+      "type": "object",
+      "required": ["id", "title"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/anchor"},
+        "title": {"type": "string", "minLength": 1},
+        "summary": {"$ref": "#/$defs/rich"},
+        "applies_to": {"$ref": "#/$defs/applies_to"},
+        "sources": {"type": "array", "items": {"type": "string"}, "description": "Workspace files this section was written from (provenance)."},
+        "blocks": {"type": "array", "items": {"$ref": "#/$defs/block"}},
+        "sections": {"type": "array", "items": {"$ref": "#/$defs/section"}}
+      }
+    },
+    "block": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {"enum": ["text", "list", "table", "entries", "equation", "callout", "figure", "diagram", "code"]}
+      },
+      "allOf": [
+        {"if": {"properties": {"type": {"const": "text"}}}, "then": {"$ref": "#/$defs/b_text"}},
+        {"if": {"properties": {"type": {"const": "list"}}}, "then": {"$ref": "#/$defs/b_list"}},
+        {"if": {"properties": {"type": {"const": "table"}}}, "then": {"$ref": "#/$defs/b_table"}},
+        {"if": {"properties": {"type": {"const": "entries"}}}, "then": {"$ref": "#/$defs/b_entries"}},
+        {"if": {"properties": {"type": {"const": "equation"}}}, "then": {"$ref": "#/$defs/b_equation"}},
+        {"if": {"properties": {"type": {"const": "callout"}}}, "then": {"$ref": "#/$defs/b_callout"}},
+        {"if": {"properties": {"type": {"const": "figure"}}}, "then": {"$ref": "#/$defs/b_figure"}},
+        {"if": {"properties": {"type": {"const": "diagram"}}}, "then": {"$ref": "#/$defs/b_diagram"}},
+        {"if": {"properties": {"type": {"const": "code"}}}, "then": {"$ref": "#/$defs/b_code"}}
+      ]
+    },
+    "b_text": {
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {"type": {}, "id": {"$ref": "#/$defs/anchor"}, "text": {"$ref": "#/$defs/rich"}}
+    },
+    "list_item": {
+      "oneOf": [
+        {"type": "string"},
+        {
+          "type": "object",
+          "required": ["text"],
+          "additionalProperties": false,
+          "properties": {
+            "text": {"type": "string"},
+            "ordered": {"type": "boolean"},
+            "items": {"type": "array", "items": {"$ref": "#/$defs/list_item"}}
+          }
+        }
+      ]
+    },
+    "b_list": {
+      "required": ["items"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {}, "id": {"$ref": "#/$defs/anchor"},
+        "ordered": {"type": "boolean"},
+        "items": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/list_item"}}
+      }
+    },
+    "cell": {"type": ["string", "number", "null"]},
+    "b_table": {
+      "required": ["columns", "rows"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {}, "id": {"$ref": "#/$defs/anchor"},
+        "caption": {"type": "string"},
+        "columns": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "align": {"type": "array", "items": {"enum": ["left", "right", "center"]}},
+        "rows": {"type": "array", "items": {"type": "array", "items": {"$ref": "#/$defs/cell"}}},
+        "notes": {"$ref": "#/$defs/rich"}
+      }
+    },
+    "b_entries": {
+      "description": "Record cards: one titled card per item, showing the listed fields (e.g. Source / Method for each input).",
+      "required": ["fields", "items"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {}, "id": {"$ref": "#/$defs/anchor"},
+        "fields": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "required": ["key", "label"], "additionalProperties": false,
+            "properties": {"key": {"type": "string"}, "label": {"type": "string"}}
+          }
+        },
+        "items": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "required": ["title"],
+            "properties": {
+              "title": {"type": "string"},
+              "id": {"$ref": "#/$defs/anchor"},
+              "applies_to": {"$ref": "#/$defs/applies_to"}
+            },
+            "additionalProperties": {"$ref": "#/$defs/rich"}
+          }
+        }
+      }
+    },
+    "b_equation": {
+      "required": ["tex"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {}, "id": {"$ref": "#/$defs/anchor"},
+        "tex": {"type": "string", "description": "KaTeX source without delimiters."},
+        "caption": {"type": "string"},
+        "where": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["symbol", "meaning"], "additionalProperties": false,
+            "properties": {"symbol": {"type": "string"}, "meaning": {"type": "string"}, "unit": {"type": "string"}}
+          }
+        }
+      }
+    },
+    "b_callout": {
+      "required": ["kind", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {}, "id": {"$ref": "#/$defs/anchor"},
+        "kind": {"enum": ["note", "important", "warning", "assumption", "limitation"]},
+        "title": {"type": "string"},
+        "text": {"$ref": "#/$defs/rich"}
+      }
+    },
+    "b_figure": {
+      "required": ["src", "alt"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {}, "id": {"$ref": "#/$defs/anchor"},
+        "src": {"type": "string", "description": "Path under content/assets/."},
+        "alt": {"type": "string"},
+        "caption": {"type": "string"},
+        "width": {"type": "string", "pattern": "^\\d{1,3}%$"}
+      }
+    },
+    "b_diagram": {
+      "required": ["mermaid"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {}, "id": {"$ref": "#/$defs/anchor"},
+        "mermaid": {"$ref": "#/$defs/rich"},
+        "caption": {"type": "string"}
+      }
+    },
+    "b_code": {
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {}, "id": {"$ref": "#/$defs/anchor"},
+        "lang": {"type": "string"},
+        "text": {"$ref": "#/$defs/rich"}
+      }
+    }
+  }
+}

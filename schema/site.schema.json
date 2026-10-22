@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "site.schema.json",
+  "title": "Site settings",
+  "type": "object",
+  "required": ["title"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {"type": "string"},
+    "title": {"type": "string"},
+    "tagline": {"type": "string"},
+    "organisation": {"type": "string"},
+    "intro": {"oneOf": [{"type": "string"}, {"type": "array", "items": {"type": "string"}}]},
+    "base_url": {"type": "string", "description": "Published site URL, e.g. https://user.github.io/repo/. Used for links between manuals inside PDFs; blank = relative links."},
+    "repo_url": {"type": "string"}
+  }
+}
