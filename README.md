@@ -2,6 +2,44 @@
 
 Manuals for the Mozambique power-system model (PLEXOS and its PyPSA benchmark). Each manual is written as JSON, and the builder turns it into a GitHub Pages site and a PDF.
 
+## View the manuals
+
+- **Live site:** <https://roar2lion.github.io/ModelDocs/> (works once the repo is on GitHub, see *First-time setup* below; the PDFs are linked from each manual's page)
+- **Local copy:** [site/index.html](site/index.html), created by `build.cmd`. It includes drafts and is not visible to anyone else.
+
+## Refresh
+
+**Local copy** (to check your edits before publishing):
+
+1. Edit the JSON in `content/`.
+2. Run `build.cmd`. It validates every manual, rebuilds `site/` (drafts included) with the PDFs, and opens it in the browser. If it lists problems, fix them and run it again.
+
+**Live site** (what everyone else sees):
+
+1. Make sure the manual has `"publish": true`; drafts with `"publish": false` stay off the live site.
+2. Run `build.cmd --check` to catch problems before pushing.
+3. Commit and push to `main`:
+   ```
+   git add -A
+   git commit -m "Update methodology manual"
+   git push
+   ```
+4. GitHub Actions rebuilds the site and PDFs and publishes them, in about 2 minutes. Progress is in the repo's *Actions* tab; a red cross there means the build found a problem and the live site was left unchanged.
+5. Reload the live site. If the old version still shows, force a refresh (Ctrl+F5).
+
+## First-time setup (once)
+
+1. On GitHub, create an empty repository named `ModelDocs` under `roar2lion`. Don't add a README, so the first push doesn't conflict.
+2. Connect this folder and push:
+   ```
+   git remote add origin https://github.com/roar2lion/ModelDocs.git
+   git push -u origin main
+   ```
+3. On GitHub: *Settings → Pages → Build and deployment → Source: GitHub Actions*. Then re-run the workflow from the *Actions* tab (or push again).
+4. In `content/site.json`, set `"base_url": "https://roar2lion.github.io/ModelDocs/"` (links between manuals inside PDFs use it) and `"repo_url": "https://github.com/roar2lion/ModelDocs"`. Commit and push.
+
+If the repository gets a different name, use `https://roar2lion.github.io/<name>/` in the links above.
+
 ## Layout
 
 | Path | What it holds |
