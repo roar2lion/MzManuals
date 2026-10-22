@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -335,10 +336,10 @@ def render_section(s, ctx, idx, level):
     if s.get("summary"):
         out.append(f'<div class="summary">{rich(s["summary"], ctx)}</div>')
     out.extend(render_block(b, ctx, idx) for b in s.get("blocks", []))
-    if s.get("sources"):
+    out.extend(render_section(c, ctx, idx, level + 1) for c in s.get("sections", []))
+    if s.get("sources"):                     # after subsections: a parent's sources cover them all
         srcs = ", ".join(f"<code>{esc(x)}</code>" for x in s["sources"])
         out.append(f'<p class="sources">Sources: {srcs}</p>')
-    out.extend(render_section(c, ctx, idx, level + 1) for c in s.get("sections", []))
     out.append("</section>")
     return "\n".join(out)
 
@@ -559,6 +560,24 @@ def print_pdf(browser, html_path, pdf_path):
 
 # --------------------------------------------------------------------------- build
 
+def clear_dir(path):
+    """Empty a folder. OneDrive can hold a lock on a folder for a moment, so retry, then
+    fall back to deleting what can be deleted (a leftover empty folder is harmless)."""
+    for _ in range(5):
+        if not path.exists():
+            return
+        try:
+            shutil.rmtree(path)
+            return
+        except PermissionError:
+            time.sleep(0.5)
+    for p in sorted(path.rglob("*"), key=lambda p: len(p.parts), reverse=True):
+        try:
+            p.unlink() if p.is_file() else p.rmdir()
+        except OSError:
+            pass
+
+
 class Build:
     def __init__(self, drafts, pdf):
         self.problems = []
@@ -630,9 +649,8 @@ class Build:
         return "window.SEARCH_INDEX = " + json.dumps(entries, ensure_ascii=False, separators=(",", ":")) + ";\n"
 
     def write(self, pages):
-        if SITE.exists():
-            shutil.rmtree(SITE)
-        (SITE / "static").mkdir(parents=True)
+        clear_dir(SITE)
+        (SITE / "static").mkdir(parents=True, exist_ok=True)
         for f in sorted(STATIC.iterdir()):
             shutil.copy2(f, SITE / "static" / f.name)
         for a in sorted(self.assets_used):
@@ -649,8 +667,8 @@ class Build:
         if browser is None:
             sys.exit("No Chrome/Edge/Chromium found for PDF printing (set CHROME_PATH).")
         tmp, out = SITE / "_print", SITE / "pdf"
-        tmp.mkdir()
-        out.mkdir()
+        tmp.mkdir(exist_ok=True)
+        out.mkdir(exist_ok=True)
         try:
             for mid, text in self.prints.items():
                 page = tmp / f"{mid}.html"

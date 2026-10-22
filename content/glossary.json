@@ -41,6 +41,47 @@
       "definition": "A region of the network model with its own demand, generation and storage. Nodes are linked by internal corridors (Lines in PLEXOS, Links in PyPSA). Each node is made of one or more provinces, as set by the node resolution."
     },
     {
+      "id": "vintage",
+      "term": "Vintage",
+      "applies_to": ["PyPSA"],
+      "definition": "One component per commissioning year of a technology at a site, e.g. `Xp_HyDam_South_2030`. PyPSA fixes a component's capacity once for its whole life, so phased build-out needs one component per build year.",
+      "see_also": ["global-constraint"]
+    },
+    {
+      "id": "global-constraint",
+      "term": "GlobalConstraint",
+      "applies_to": ["PyPSA"],
+      "definition": "PyPSA's native constraint component, saved in the network file like any other component. It can bound summed capacity or energy of components sharing a carrier; other constraint shapes have to be added at solve time.",
+      "see_also": ["vintage"]
+    },
+    {
+      "id": "voll",
+      "term": "VoLL",
+      "expansion": "Value of Lost Load",
+      "applies_to": ["PLEXOS", "PyPSA"],
+      "definition": "The cost assigned to each MWh of demand left unserved. In PyPSA it is the marginal cost of a slack generator at each node."
+    },
+    {
+      "id": "solar-multiple",
+      "term": "Solar Multiple",
+      "aliases": ["SM"],
+      "applies_to": ["PLEXOS", "PyPSA"],
+      "definition": "Size of a CSP plant's solar field relative to its turbine: the field's thermal capacity divided by the turbine's rated power. Larger storage durations come with larger multiples."
+    },
+    {
+      "id": "snapshot-weighting",
+      "term": "Snapshot weighting",
+      "applies_to": ["PyPSA"],
+      "definition": "The number of real hours each sampled hour stands for. Weighted sums over the sampled hours scale results up to a full year."
+    },
+    {
+      "id": "crf",
+      "term": "CRF",
+      "expansion": "Capital Recovery Factor",
+      "applies_to": ["PLEXOS", "PyPSA"],
+      "definition": "The factor that turns an overnight build cost into an equal yearly payment over the economic life: $`i(1+i)^n / ((1+i)^n - 1)`$ at interest rate $`i`$ over $`n`$ years."
+    },
+    {
       "id": "pes",
       "term": "PES",
       "applies_to": ["PLEXOS", "PyPSA"],
