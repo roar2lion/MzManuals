@@ -4,7 +4,7 @@ Manuals for the Mozambique power-system model (PLEXOS and its PyPSA benchmark). 
 
 ## View the manuals
 
-- **Live site:** <https://roar2lion.github.io/ModelDocs/> (works once the repo is on GitHub, see *First-time setup* below; the PDFs are linked from each manual's page)
+- **Live site:** <https://roar2lion.github.io/MzManuals/> (works once the repo is on GitHub, see *First-time setup* below; the PDFs are linked from each manual's page)
 - **Local copy:** [site/index.html](site/index.html), created by `build.cmd`. It includes drafts and is not visible to anyone else.
 
 ## Refresh
@@ -29,14 +29,14 @@ Manuals for the Mozambique power-system model (PLEXOS and its PyPSA benchmark). 
 
 ## First-time setup (once)
 
-1. On GitHub, create an empty repository named `ModelDocs` under `roar2lion`. Don't add a README, so the first push doesn't conflict.
+1. On GitHub, create an empty repository named `MzManuals` under `roar2lion`. Don't add a README, so the first push doesn't conflict. On a free GitHub account, Pages works only for a **public** repository; a private one needs GitHub Pro or a paid organisation plan, and otherwise shows a 404.
 2. Connect this folder and push:
    ```
-   git remote add origin https://github.com/roar2lion/ModelDocs.git
+   git remote add origin https://github.com/roar2lion/MzManuals.git
    git push -u origin main
    ```
 3. On GitHub: *Settings → Pages → Build and deployment → Source: GitHub Actions*. Then re-run the workflow from the *Actions* tab (or push again).
-4. In `content/site.json`, set `"base_url": "https://roar2lion.github.io/ModelDocs/"` (links between manuals inside PDFs use it) and `"repo_url": "https://github.com/roar2lion/ModelDocs"`. Commit and push.
+4. `content/site.json` holds `"base_url": "https://roar2lion.github.io/MzManuals/"` (links between manuals inside PDFs use it) and `"repo_url"`. Update both if the repository is renamed.
 
 If the repository gets a different name, use `https://roar2lion.github.io/<name>/` in the links above.
 
