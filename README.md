@@ -2,6 +2,18 @@
 
 Manuals for the Mozambique power-system model (PLEXOS and its PyPSA benchmark). Each manual is written as JSON, and the builder turns it into a GitHub Pages site and a PDF.
 
+## Contents
+
+- [View the manuals](#view-the-manuals)
+- [Refresh](#refresh)
+  - [Local copy](#local-copy)
+  - [Live site](#live-site)
+- [First-time setup (once)](#first-time-setup-once)
+- [Layout](#layout)
+- [Use](#use)
+- [Linking to a section (e.g. from slides)](#linking-to-a-section-eg-from-slides)
+- [Compared with the SPLAT-to-PyPSA manual](#compared-with-the-splat-to-pypsa-manual)
+
 ## View the manuals
 
 - **Live site:** <https://roar2lion.github.io/MzManuals/> (works once the repo is on GitHub, see *First-time setup* below; the PDFs are linked from each manual's page)
@@ -9,12 +21,16 @@ Manuals for the Mozambique power-system model (PLEXOS and its PyPSA benchmark). 
 
 ## Refresh
 
-**Local copy** (to check your edits before publishing):
+### Local copy
+
+To check your edits before publishing:
 
 1. Edit the JSON in `content/`.
 2. Run `build.cmd`. It validates every manual, rebuilds `site/` (drafts included) with the PDFs, and opens it in the browser. If it lists problems, fix them and run it again.
 
-**Live site** (what everyone else sees):
+### Live site
+
+What everyone else sees:
 
 1. Make sure the manual has `"publish": true`; drafts with `"publish": false` stay off the live site.
 2. Run `build.cmd --check` to catch problems before pushing.
