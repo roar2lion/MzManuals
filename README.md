@@ -66,6 +66,27 @@ The PDFs are printed by a local Chrome or Edge, or by Chrome on the CI runner, s
 
 How to write a manual (block types, inline syntax, cross-references, glossary, publishing setup): the **Authoring Guide**, `content/manuals/authoring-guide.json`. It is built locally (`build.cmd`) and kept off the live site.
 
+## Linking to a section (e.g. from slides)
+
+Every section and subsection has a permanent link: the site address, the manual's page, `#` and the section's `id`:
+
+```
+https://roar2lion.github.io/MzManuals/<manual-id>.html#<section-id>
+```
+
+e.g. `https://roar2lion.github.io/MzManuals/pypsa-architecture.html#snsp`. The `id` is set in the manual's JSON, not derived from the title or number, so a link survives renaming and reordering; never change an `id` once something links to it. In PowerPoint, select a text box or icon, press Ctrl+K and paste the link.
+
+Sections of `pypsa-architecture` for the efforts behind PyPSA's parity with PLEXOS (its Overview lists all six, `#overview`):
+
+| Effort | Section `id` |
+|---|---|
+| Model size: milestone years and myopic blocks | `model-size` |
+| Vintages, and builds locked in across blocks | `vintages`, `foresight` |
+| Sampled chronology with peak and energy rescaling | `time-resolution` (`time-sampling`, `time-vs-plexos`) |
+| Constraints added at solve time | `constraint-visibility`, `snsp`, `csp`, `energy-caps` |
+| Corridor losses, token flow cost, cross-border markets | `corridors` (`corridor-losses`, `corridor-flow-cost`), `trade` |
+| Economics and availability | `npv`, `availability` |
+
 ## Compared with the SPLAT-to-PyPSA manual
 
 - **Many manuals, one builder.** The builder knows block types (text, list, table, entries, equation, callout, figure, diagram, code), not manual sections. A new manual needs no code change.

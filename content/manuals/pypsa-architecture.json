@@ -3,10 +3,10 @@
   "id": "pypsa-architecture",
   "title": "PyPSA Model Architecture",
   "subtitle": "How the PLEXOS capacity-expansion model is represented in PyPSA",
-  "description": "How the PyPSA benchmark represents assets, availability, corridors, trade, CSP, energy caps, time sampling and the optimisation, and where PyPSA's data model forces a different design than PLEXOS.",
-  "version": "1.0",
+  "description": "How the PyPSA benchmark represents assets, availability, corridors, trade, SNSP, CSP, energy caps, time sampling, model size and the optimisation, and where PyPSA's data model forces a different design than PLEXOS.",
+  "version": "1.1",
   "status": "final",
-  "updated": "2026-10-22",
+  "updated": "2026-11-02",
   "applies_to": ["PyPSA"],
   "publish": true,
   "order": 20,
@@ -20,7 +20,20 @@
           "type": "text",
           "text": [
             "The PyPSA model is a benchmark of the PLEXOS long-term capacity-expansion model ([[lt-plan]]). It is built directly from the PLEXOS model's skeleton and data, by the V0 model creator, and keeps PLEXOS's object names wherever it can.",
-            "PyPSA's data model differs from PLEXOS's in several places: it fixes a component's capacity once for its whole life, has no market object, can't put a loss on a two-way corridor, and can express only a few constraint shapes natively. This manual explains, topic by topic, how the PyPSA model represents each part of the system, where it has to differ from PLEXOS, and how those gaps are closed."
+            "PyPSA's data model differs from PLEXOS's in several places: it fixes a component's capacity once for its whole life, has no market object, can't put a loss on a two-way corridor, and can express only a few constraint shapes natively. This manual explains, topic by topic, how the PyPSA model represents each part of the system, where it has to differ from PLEXOS, and how those gaps are closed.",
+            "Reaching parity with PLEXOS took six main efforts, each explained in its own section:"
+          ]
+        },
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "**Model size: milestone years and myopic blocks.** HiGHS can't solve all 30 years at once, so the horizon is reduced to milestone years placed where the inputs change, solved in three [[myopic|myopic]] blocks ([@#model-size]).",
+            "**Vintages and block persistence.** One component per candidate and milestone year, bounded together by PLEXOS's cumulative potential ([@#vintages]); what a block builds is locked in for the later blocks ([@#foresight]).",
+            "**Sampled chronology with peak and energy rescaling.** PLEXOS-style statistical day selection, with each node's load rescaled to the interval's input peak and energy ([@#time-resolution]).",
+            "**Constraints added at solve time** ([@#constraint-visibility]): [[snsp]] ([@#snsp]), the two-component CSP ([@#csp]) and the capacity-factor energy caps ([@#energy-caps]).",
+            "**Corridor losses, token flow cost and cross-border markets.** Each corridor split into two one-way Links ([@#corridors]); PLEXOS Markets as Generators with annual energy bounds ([@#trade]).",
+            "**Economics and availability.** NPV period weights and capital annuities as in the LT Plan ([@#npv]); outage and maintenance derating ([@#availability])."
           ]
         },
         {
@@ -333,6 +346,65 @@
         }
       ],
       "sources": ["PypsaExpansion/MasterDocs/ModelArchitecture_Pypsa.md §3"]
+    },
+    {
+      "id": "snsp",
+      "title": "SNSP limits",
+      "summary": "In every hour, inverter-based supply may be at most 70% of total supply, system-wide and in each zone; a zone may count synchronous support borrowed from its neighbours.",
+      "blocks": [
+        {
+          "type": "text",
+          "text": [
+            "Solar PV, wind and battery inverters have no rotating mass. A grid running on too high a share of them at one moment loses inertia and frequency stability. [[snsp]] caps that share in every hour, at two levels, as PLEXOS does with `Con_SnspGlobal` and `Con_SnspSynchroArea_*`.",
+            "PyPSA has no constraint of this shape: its native limits are on capacity once per period, or on energy over the whole horizon, never per hour and zone. So the constraints are added at solve time ([@#constraint-visibility]) by `snsp_constraints.py`, using the same names as PLEXOS."
+          ]
+        },
+        {
+          "type": "entries",
+          "fields": [
+            {"key": "counts", "label": "Counts as"}
+          ],
+          "items": [
+            {"title": "Inverter-based", "counts": "Solar PV, wind, and battery discharge net of battery charging."},
+            {"title": "Synchronous", "counts": "Thermal and hydro generators, and PHES and CSP turbines while discharging. Their charging draws on water head or solar heat, not the grid, so it counts on neither side."},
+            {"title": "Neither", "counts": "The `VoLL` slack generators ([@#unserved-energy]) and the cross-border Markets ([@#trade]), which carry no SNSP coefficients in PLEXOS."}
+          ]
+        },
+        {
+          "type": "equation",
+          "id": "eq-snsp",
+          "tex": "(1 - L)\\, I_{z,t} \\;-\\; L \\Big( S_{z,t} + \\sum_{n} B_{n \\to z,\\,t} \\Big) \\;\\le\\; 0",
+          "caption": "Local limit, `Con_SnspSynchroArea_{zone}`, for every hour; the global limit, `Con_SnspGlobal`, has the same form over the whole system, without borrowing.",
+          "where": [
+            {"symbol": "L", "meaning": "SNSP limit, 0.7, read from the skeleton and stored per year in `meta.json` (`snsp`)", "unit": "fraction"},
+            {"symbol": "I_{z,t}", "meaning": "Inverter-based supply in zone $`z`$, hour $`t`$", "unit": "MW"},
+            {"symbol": "S_{z,t}", "meaning": "Synchronous supply in zone $`z`$", "unit": "MW"},
+            {"symbol": "B_{n \\to z,\\,t}", "meaning": "Synchronous support borrowed from neighbouring zone $`n`$ (`SnspImport-{zone}_From{n}`)", "unit": "MW"}
+          ]
+        },
+        {
+          "type": "text",
+          "text": "Each zone is one node. The borrowed support $`B`$ is a new non-negative variable, capped twice, as in PLEXOS:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "**By what the neighbour has spinning** that hour: its own synchronous supply (`Con_SnspImportGenCap_*`).",
+            "**By the corridor between them** that year: every active Link vintage, existing, candidate and committed, with extendable capacity entering as its capacity variable (`Con_SnspImportInterconCap_*`). With corridor losses on, each corridor's reverse copy is left out, so it counts once ([@#corridor-losses])."
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "note",
+          "title": "Borrowing can double-count",
+          "text": "A neighbour may lend the same synchronous supply to two zones at once. This mirrors the PLEXOS design, where the global limit is the backstop: the whole system still can't exceed 70%."
+        },
+        {
+          "type": "text",
+          "text": "Only components that exist in a period count in it. After a solve, the shadow prices of all four constraint types are written to `{Scenario}_Solution SNSP Shadow Prices.csv`, one column per constraint and year, one row per snapshot."
+        }
+      ],
+      "sources": ["PypsaExpansion/Scripts/RunModel/SNSP_Constraints.md", "PypsaExpansion/Scripts/V0 model creator/README.md, SNSP constraints"]
     },
     {
       "id": "csp",
@@ -753,6 +825,52 @@
           "sources": ["PypsaExpansion/Scripts/RunModel/myopic.py", "PypsaExpansion/Scripts/RunModel/README.md §1.2.4"]
         },
         {
+          "id": "model-size",
+          "title": "Model size: milestone years and myopic blocks",
+          "summary": "The PLEXOS LT Plan steps through 2023–2052 year by year with perfect foresight. HiGHS can't solve that, so PyPSA uses eight milestone years, placed where the inputs change, solved in three myopic blocks.",
+          "blocks": [
+            {
+              "type": "text",
+              "text": [
+                "PLEXOS plans every year of its 2023–2052 horizon in one solve. In PyPSA, every period adds a full set of sampled hours and a new vintage of every candidate ([@#vintages]), so the problem grows with each period. In October 2026 tests, HiGHS stalled on the whole-horizon problem at 2 or more days per month (about 6 M rows or more), but solved 1 day per month (about 3 M rows) in 34 minutes.",
+                "Two settings bring the problem down to a size that solves:"
+              ]
+            },
+            {
+              "type": "list",
+              "ordered": true,
+              "items": [
+                "**Milestone years** (`milestone_years`, V0 model creator): the investment periods. Each stands for the years until the next, at its own year's data; the last runs to the horizon end. Listing every year from 2023 to 2052 would reproduce PLEXOS's yearly steps.",
+                "**Myopic blocks** (`myopic_block_end_years`, run configuration): the periods are solved in blocks, each block's builds locked in for the next ([@#foresight]). Each block's problem is only a fraction of the whole horizon's, so a finer time resolution fits."
+              ]
+            },
+            {
+              "type": "table",
+              "id": "tab-milestones",
+              "caption": "Milestone years, placed where the PLEXOS inputs change.",
+              "columns": ["Milestone", "Why", "Stands for", "Myopic block"],
+              "rows": [
+                ["2023", "Start of the horizon; existing fleet only", "2023–2026", "1"],
+                ["2027", "Build limits open for almost every technology; new lines can be built from July 2027", "2027–2028", "1"],
+                ["2029", "Demand jump: Mozal returns", "2029", "1"],
+                ["2030", "Reporting year; last steps in interconnector and cross-border capacity; last year of the contracted export to South Africa", "2030–2031", "2"],
+                ["2032", "Run-of-river planned minimums start; DES dam hydro opens; `South-Center 2027-2032` line deadline", "2032–2034", "2"],
+                ["2035", "Reporting year", "2035–2039", "2"],
+                ["2040", "Reporting year", "2040–2049", "3"],
+                ["2050", "Reporting year; runs to the horizon end", "2050–2052", "3"]
+              ],
+              "notes": "Blocks: `myopic_block_end_years = 2029 2035 2050`. The 2045 milestone was dropped in October 2026 so that the last block, 2040 with 2050, stays below the size that solved; a 2040s build therefore sees 2050 costs."
+            },
+            {
+              "type": "callout",
+              "kind": "warning",
+              "title": "Where a block ends matters",
+              "text": "A block can't see past its last year. Ending one inside a temporary event (a contract about to end, a demand step) or before a steep cost decline makes it build for that moment alone: a 2023–2030 block built 777 MW of PES solar to get through the 2029–2030 supply crunch, which neither model builds with perfect foresight. So block ends are placed where nothing temporary happens. A look-ahead (`myopic_lookahead_years`, like PLEXOS's `Step Overlap`) is available, but enlarges every solve, so it is a last resort."
+            }
+          ],
+          "sources": ["MasterDocs/ModelLog.md §2.5, §6.6, §13, §14.2", "PypsaExpansion/Scripts/RunModel/README.md §1.2.4", "PypsaExpansion/Scripts/V0 model creator/config.csv", "PypsaExpansion/Scripts/RunModel/config.csv"]
+        },
+        {
           "id": "overnight",
           "title": "Not implemented: end-state optimisation",
           "blocks": [
@@ -788,6 +906,7 @@
     }
   ],
   "changelog": [
+    {"version": "1.1", "date": "2026-11-02", "changes": ["New sections: SNSP limits, and Model size (milestone years and myopic blocks).", "Overview lists the six main efforts towards parity with PLEXOS, each linked to its section."]},
     {"version": "1.0", "date": "2026-10-22", "changes": ["First published version, from PypsaExpansion/MasterDocs/ModelArchitecture_Pypsa.md."]}
   ]
 }
