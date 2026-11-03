@@ -1,10 +1,10 @@
 """Build the documentation site and PDFs from the JSON manuals.
 
-    python builder/build.py                 validate + build site/ (published manuals only)
-    python builder/build.py --drafts        also build manuals with "publish": false
-    python builder/build.py --pdf           also print each manual to site/pdf/<id>.pdf
-    python builder/build.py --check         validate only, write nothing
-    python builder/build.py --new ID TITLE  scaffold content/manuals/ID.json
+    python scripts/builder/build.py                 validate + build site/ (published manuals only)
+    python scripts/builder/build.py --drafts        also build manuals with "publish": false
+    python scripts/builder/build.py --pdf           also print each manual to site/pdf/<id>.pdf
+    python scripts/builder/build.py --check         validate only, write nothing
+    python scripts/builder/build.py --new ID TITLE  scaffold content/manuals/ID.json
 
 Everything a manual needs is in its JSON (see schema/manual.schema.json and the
 authoring-guide manual). The output is deterministic: same JSON in, same files out.
@@ -21,7 +21,7 @@ import tempfile
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 CONTENT = ROOT / "content"
 MANUALS = CONTENT / "manuals"
 ASSETS = CONTENT / "assets"

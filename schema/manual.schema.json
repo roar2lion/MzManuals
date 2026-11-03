@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "manual.schema.json",
   "title": "Manual",
-  "description": "One manual (methodology, definitions, ...). Rendered by builder/build.py into a site page and a PDF.",
+  "description": "One manual (methodology, definitions, ...). Rendered by scripts/builder/build.py into a site page and a PDF.",
   "type": "object",
   "required": ["id", "title", "version", "status", "updated", "sections"],
   "additionalProperties": false,

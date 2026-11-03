@@ -2,3 +2,6 @@
 site/
 __pycache__/
 *.pyc
+
+# Markdown working copies of the manuals (json_to_md); the JSON stays the source
+md/

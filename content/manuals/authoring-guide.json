@@ -28,7 +28,7 @@
           "type": "list",
           "ordered": true,
           "items": [
-            "Scaffold a manual: `python builder/build.py --new methodology \"Methodology\"`. It starts as a draft with `\"publish\": false`.",
+            "Scaffold a manual: `python scripts/builder/build.py --new methodology \"Methodology\"`. It starts as a draft with `\"publish\": false`.",
             "Write its sections in `content/manuals/methodology.json`. Your editor checks the file against `schema/manual.schema.json` as you type, through its `$schema` line.",
             "Run `build.cmd`. It validates every manual, builds `site/` including drafts, prints the PDFs and opens the site.",
             "When the manual is ready, set `\"publish\": true` and push. GitHub Actions rebuilds the live site and its PDFs."

@@ -11,6 +11,7 @@ Manuals for the Mozambique power-system model (PLEXOS and its PyPSA benchmark). 
 - [First-time setup (once)](#first-time-setup-once)
 - [Layout](#layout)
 - [Use](#use)
+- [Editing a manual as Markdown (e.g. with AI help)](#editing-a-manual-as-markdown-eg-with-ai-help)
 - [Linking to a section (e.g. from slides)](#linking-to-a-section-eg-from-slides)
 - [Compared with the SPLAT-to-PyPSA manual](#compared-with-the-splat-to-pypsa-manual)
 
@@ -65,22 +66,42 @@ If the repository gets a different name, use `https://roar2lion.github.io/<name>
 | `content/site.json` | Site title, intro, `base_url` (live address, used for links between manuals inside PDFs) |
 | `content/assets/` | Figures used by manuals |
 | `schema/` | JSON Schemas: editors validate and autocomplete through each file's `$schema` line |
-| `builder/build.py` | Validator and renderer (site + PDF) |
-| `builder/static/` | Site CSS/JS and the print stylesheet |
+| `scripts/builder/build.py` | Validator and renderer (site + PDF) |
+| `scripts/builder/static/` | Site CSS/JS and the print stylesheet |
+| `scripts/json_to_md.py`, `scripts/md_to_json.py` | Convert a manual to Markdown and back (shared format: `scripts/manual_md.py`) |
+| `build.cmd`, `json_to_md.cmd`, `md_to_json.cmd` | Double-click wrappers for the three scripts |
 | `.github/workflows/pages.yml` | Validates every push or PR; builds and deploys the site and PDFs from `main` |
 | `site/` | Build output (git-ignored) |
+| `md/` | Markdown working copies of the manuals (git-ignored) |
 
 ## Use
 
 ```
 build.cmd                                     validate, build site\ with drafts and PDFs, open it
 build.cmd --check                             validate only
-python builder/build.py --new methodology "Methodology"   scaffold a new manual (starts as a draft, unpublished)
+json_to_md.cmd                                write manuals as Markdown to md\ (pick from a list)
+md_to_json.cmd                                put edited Markdown back into the JSON, then validate
+python scripts/builder/build.py --new methodology "Methodology"   scaffold a new manual (starts as a draft, unpublished)
 ```
 
 The PDFs are printed by a local Chrome or Edge, or by Chrome on the CI runner, so the PDF looks the same as the site, maths and diagrams included. Set `CHROME_PATH` if the browser is not in a standard place.
 
 How to write a manual (block types, inline syntax, cross-references, glossary, publishing setup): the **Authoring Guide**, `content/manuals/authoring-guide.json`. It is built locally (`build.cmd`) and kept off the live site.
+
+## Editing a manual as Markdown (e.g. with AI help)
+
+The JSON is the source of every manual, but it is hard to read and edit as prose. The two converters give a Markdown working copy and bring the edits back:
+
+1. **`json_to_md.cmd`**: pick the manuals (Enter = all). Each becomes `md/<id>.md`: sections as headings, paragraphs, lists, tables, entries and equations as ordinary Markdown.
+2. **Edit `md/<id>.md`**, by hand or with AI help. Keep the front matter, every `<!-- ... -->` comment line and the `{#id}` at the end of each heading: they carry the structure back. The file's second line repeats these rules, so an AI assistant reading it sees them too.
+   - A new paragraph needs nothing extra; it becomes a text block.
+   - A new list, table or other block starts with a type comment line (e.g. `<!-- list -->`) copied from a block of the same type.
+   - A new section needs a heading ending in a new `{#id}` (lower case, digits, hyphens).
+   - Captions, notes and sources sit in the JSON of a comment line; edit them there.
+3. **`md_to_json.cmd`**: pick the files (Enter = all). Each is written back to its JSON and validated with `scripts/builder/build.py --check`. If validation fails, the JSON is left as it was and the problems are listed.
+4. Check the JSON diff, run `build.cmd` to see the result, then commit as usual.
+
+The round trip is exact: parts you didn't edit keep their original text, so the JSON diff shows only your changes, and converting an unedited file changes nothing. Two safeguards ask before going ahead: `json_to_md` before overwriting an md file whose edits haven't gone back into the JSON, and `md_to_json` if the JSON changed after its md file was made (writing would undo that change). `md/` is git-ignored: the JSON stays the only source.
 
 ## Linking to a section (e.g. from slides)
 
