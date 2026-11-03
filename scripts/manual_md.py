@@ -60,9 +60,9 @@ EDIT_NOTE = ("<!-- Edit the prose freely: headings, paragraphs, list items, tabl
              "the JSON. A new paragraph under a heading needs nothing extra; a new list, table or other "
              "block starts with a type comment line copied from a block of the same type. A new heading "
              "needs its own {#id} (lower case, digits, hyphens). Inline markup is the manual's own: "
-             "[[term]] glossary, [@#anchor] cross-reference, $`tex`$ maths, **bold**. The Contents list and "
-             "the <a id> line above each heading are generated: md_to_json refreshes them, edits there are "
-             "ignored. -->")
+             "[[term]] glossary, [@#anchor] cross-reference, $`tex`$ maths, **bold**. The Contents list, "
+             "the section numbers in the headings and the <a id> line above each heading are generated: "
+             "md_to_json refreshes them, edits there are ignored. -->")
 
 
 class FormatError(ValueError):
@@ -161,6 +161,23 @@ def to_md(manual, source_rel, sha):
 # ---------------------------------------------------------------- navigation (generated)
 TOC_START, TOC_END = "<!-- toc -->", "<!-- /toc -->"
 ANCHOR_RE = re.compile(r'^<a id="[^"]*"></a>\s*$')
+NUMBER_RE = re.compile(r"^(Appendix [A-Z]|[A-Z](?:\.\d{1,2})+|\d{1,2}(?:\.\d{1,2})*)\s+(?=\S)")
+
+
+def strip_number(title, depth, in_app):
+    """Drop the generated section number ('2.1 ', 'Appendix A ', 'A.1 ') from a heading's title.
+    Only a number that fits the heading's level counts (two parts for ##, ...), so a new heading
+    such as '## 2050 targets' keeps its title. Exported headings always carry a number, so a
+    title that itself starts with one keeps it too."""
+    m = NUMBER_RE.match(title)
+    if not m:
+        return title
+    num = m.group(1)
+    if in_app:
+        ok = num == f"Appendix {num[-1]}" if depth == 1 else (num[0].isalpha() and num.count(".") == depth - 1)
+    else:
+        ok = num[0].isdigit() and num.count(".") == depth - 1
+    return title[m.end():] if ok else title
 
 
 def _toc_lines(manual):
@@ -183,6 +200,7 @@ def _toc_lines(manual):
 def with_nav(text, manual):
     """(Re)write the generated Contents list and the <a id> anchor above each heading."""
     out, fence, in_toc, fm_seen, fm_end, skip_blank = [], None, False, 0, None, False
+    in_app, counters = False, []
     for ln in text.split("\n"):
         st = ln.strip()
         if fence:
@@ -211,9 +229,19 @@ def with_nav(text, manual):
         if ANCHOR_RE.match(ln):
             skip_blank = True
             continue
+        if MARKER_RE.match(st) and MARKER_RE.match(st).group(1) == "appendices":
+            in_app, counters = True, []
         h = HEADING_RE.match(ln)
         if h:                                    # the blank line is needed, or the heading renders as text
             out += [f'<a id="{h.group(3)}"></a>', ""]
+            depth = len(h.group(1))
+            counters = (counters + [0] * depth)[:depth]
+            counters[-1] += 1
+            nums = [str(c) for c in counters]
+            if in_app:
+                nums[0] = chr(64 + counters[0])
+            label = f"Appendix {nums[0]}" if in_app and depth == 1 else ".".join(nums)
+            ln = f"{h.group(1)} {label} {strip_number(h.group(2), depth, in_app)} {{#{h.group(3)}}}"
         out.append(ln)
         m = FENCE_RE.match(st)
         if m:
@@ -405,7 +433,7 @@ def from_md(text):
 
 def _tokens(lines, start):
     """Split the body into ('heading', depth, title, id, line) / ('appendices',) / ('block', type, attrs, body, line)."""
-    toks, cur, fence, in_toc = [], None, None, False
+    toks, cur, fence, in_toc, in_app = [], None, None, False, False
     for n in range(start, len(lines)):
         ln = lines[n]
         if fence:
@@ -421,7 +449,8 @@ def _tokens(lines, start):
             continue
         h = HEADING_RE.match(ln)
         if h:
-            toks.append(("heading", len(h.group(1)), h.group(2), h.group(3), n + 1))
+            toks.append(("heading", len(h.group(1)), strip_number(h.group(2), len(h.group(1)), in_app),
+                         h.group(3), n + 1))
             cur = None
             continue
         m = MARKER_RE.match(ln.strip()) if not ln.startswith(" ") else None
@@ -433,7 +462,7 @@ def _tokens(lines, start):
                 raise FormatError(f"line {n + 1}: the JSON in this comment is invalid ({e.msg})")
             if word == "appendices":
                 toks.append(("appendices", n + 1))
-                cur = None
+                cur, in_app = None, True
             elif word == "section":
                 if not toks or toks[-1][0] != "heading" or len(toks[-1]) > 5:
                     raise FormatError(f"line {n + 1}: '<!-- section -->' must follow its heading directly")

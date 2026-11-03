@@ -1,5 +1,5 @@
 <!-- manual-md 1 | source: content/manuals/pypsa-architecture.json | sha256: 9d76597c60e78a40 -->
-<!-- Edit the prose freely: headings, paragraphs, list items, table cells, entry values, and the text inside the JSON of a comment line (captions, notes). Keep the front matter, every comment line and the {#id} at the end of each heading: md_to_json uses them to rebuild the JSON. A new paragraph under a heading needs nothing extra; a new list, table or other block starts with a type comment line copied from a block of the same type. A new heading needs its own {#id} (lower case, digits, hyphens). Inline markup is the manual's own: [[term]] glossary, [@#anchor] cross-reference, $`tex`$ maths, **bold**. The Contents list and the <a id> line above each heading are generated: md_to_json refreshes them, edits there are ignored. -->
+<!-- Edit the prose freely: headings, paragraphs, list items, table cells, entry values, and the text inside the JSON of a comment line (captions, notes). Keep the front matter, every comment line and the {#id} at the end of each heading: md_to_json uses them to rebuild the JSON. A new paragraph under a heading needs nothing extra; a new list, table or other block starts with a type comment line copied from a block of the same type. A new heading needs its own {#id} (lower case, digits, hyphens). Inline markup is the manual's own: [[term]] glossary, [@#anchor] cross-reference, $`tex`$ maths, **bold**. The Contents list, the section numbers in the headings and the <a id> line above each heading are generated: md_to_json refreshes them, edits there are ignored. -->
 
 ---
 $schema: "../../schema/manual.schema.json"
@@ -57,7 +57,7 @@ changelog: [{"version": "1.1", "date": "2026-11-02", "changes": ["New sections: 
 
 <a id="overview"></a>
 
-# Overview {#overview}
+# 1 Overview {#overview}
 <!-- section {"sources": ["PypsaExpansion/MasterDocs/ModelArchitecture_Pypsa.md"]} -->
 
 <!-- text {"_list": true} -->
@@ -80,7 +80,7 @@ PyPSA 1.3.0 with linopy 0.9.1, pandas 3.0 and the HiGHS solver 1.15.1 (via `high
 
 <a id="constraint-visibility"></a>
 
-# Where constraints live {#constraint-visibility}
+# 2 Where constraints live {#constraint-visibility}
 <!-- section {"sources": ["PypsaExpansion/MasterDocs/ModelArchitecture_Pypsa.md", "My summary guides/Custom_Constraint_Export_Options.md"]} -->
 
 > Some constraints are saved in the network file; others exist only inside a running solve. Only the first kind can be inspected afterwards with PyPSA's own tools.
@@ -111,12 +111,12 @@ Solve-time constraints exist only in the linopy model, PyPSA's optimisation laye
 
 <a id="vintages"></a>
 
-# Milestone-wise asset declarations {#vintages}
+# 3 Milestone-wise asset declarations {#vintages}
 <!-- section {"sources": ["PypsaExpansion/MasterDocs/ModelArchitecture_Pypsa.md §1"]} -->
 
 <a id="vintages-why"></a>
 
-## Why PyPSA needs a different representation {#vintages-why}
+## 3.1 Why PyPSA needs a different representation {#vintages-why}
 
 <!-- text {"_list": true} -->
 PLEXOS represents a candidate generator or battery as **one persistent object**. How many units are built is a decision PLEXOS can change at different points of the horizon, while `Max Units Built` and `Min Units Built` cap and floor the object's total over its whole life.
@@ -125,7 +125,7 @@ PyPSA can't do this in one object. The capacity variable `p_nom` of an extendabl
 
 <a id="vintage-pattern"></a>
 
-## The vintage pattern {#vintage-pattern}
+## 3.2 The vintage pattern {#vintage-pattern}
 
 <!-- text -->
 For every expansion candidate (a technology at a node), the builder creates one `Generator` or `StorageUnit` per milestone year. Each is named after the PLEXOS candidate object, which already carries PLEXOS's `Xp_` prefix, plus the vintage year:
@@ -146,7 +146,7 @@ Each vintage is extendable on its own (`p_nom_extendable = True`), with its own 
 
 <a id="vintage-bounds"></a>
 
-## Bounding the vintages {#vintage-bounds}
+## 3.3 Bounding the vintages {#vintage-bounds}
 
 <!-- text -->
 Separate components are not tied to each other, so on their own each vintage could be built up to the full resource ceiling. Two steps prevent that:
@@ -169,7 +169,7 @@ Separate components are not tied to each other, so on their own each vintage cou
 
 <a id="availability"></a>
 
-# Availability: outage and maintenance derating {#availability}
+# 4 Availability: outage and maintenance derating {#availability}
 <!-- section {"sources": ["PypsaExpansion/Scripts/V0 model creator/network_builder.py", "plexos_data_loader.availability_factor()"]} -->
 
 <!-- text {"_list": true} -->
@@ -215,12 +215,12 @@ Until October 2026 the builder ignored these rates, so gas was 100% available in
 
 <a id="corridors"></a>
 
-# Internodal corridors {#corridors}
+# 5 Internodal corridors {#corridors}
 <!-- section {"sources": ["PypsaExpansion/MasterDocs/ModelArchitecture_Pypsa.md §2"]} -->
 
 <a id="corridor-links"></a>
 
-## One two-way Link per corridor {#corridor-links}
+## 5.1 One two-way Link per corridor {#corridor-links}
 
 <!-- text {"_list": true} -->
 PLEXOS represents a Line as **one object with one transfer limit**, shared by both directions of flow; the data gives one maximum per corridor and period, applied symmetrically.
@@ -238,7 +238,7 @@ A single two-way Link ties both directions' capacity by construction, so no extr
 
 <a id="corridor-losses"></a>
 
-## Losses: 5%, added at solve time {#corridor-losses}
+## 5.2 Losses: 5%, added at solve time {#corridor-losses}
 <!-- section {"sources": ["PypsaExpansion/Scripts/RunModel/intercon_losses.py", "PypsaExpansion/Scripts/RunModel/README.md §1.2.5"]} -->
 
 <!-- text {"_list": true} -->
@@ -259,7 +259,7 @@ p^{\text{out}}_t = (1-\ell)\, p^{\text{in}}_t, \qquad 0 \le p^{\text{in}}_{\righ
 
 <a id="corridor-flow-cost"></a>
 
-## Token flow cost {#corridor-flow-cost}
+## 5.3 Token flow cost {#corridor-flow-cost}
 
 <!-- text {"_list": true} -->
 Every MWh sent along a corridor costs **0.01 $/MWh** (`intercon_flow_cost`), charged on both one-way Links. This is not a tariff and represents no real cost; it only keeps solver results stable.
@@ -271,7 +271,7 @@ A two-way Link's `marginal_cost` prices the signed flow `p0`, not its absolute v
 
 <a id="trade"></a>
 
-# Cross-border trade {#trade}
+# 6 Cross-border trade {#trade}
 <!-- section {"sources": ["PypsaExpansion/MasterDocs/ModelArchitecture_Pypsa.md §2b"]} -->
 
 <!-- text {"_list": true} -->
@@ -296,7 +296,7 @@ An `operational_limit` GlobalConstraint was rejected for this: it groups by carr
 
 <a id="unserved-energy"></a>
 
-# Unserved energy {#unserved-energy}
+# 7 Unserved energy {#unserved-energy}
 <!-- section {"sources": ["PypsaExpansion/MasterDocs/ModelArchitecture_Pypsa.md §3"]} -->
 
 <!-- text -->
@@ -307,7 +307,7 @@ Slack generators are ordinary `Generator` components, so they appear in raw PyPS
 
 <a id="snsp"></a>
 
-# SNSP limits {#snsp}
+# 8 SNSP limits {#snsp}
 <!-- section {"sources": ["PypsaExpansion/Scripts/RunModel/SNSP_Constraints.md", "PypsaExpansion/Scripts/V0 model creator/README.md, SNSP constraints"]} -->
 
 > In every hour, inverter-based supply may be at most 70% of total supply, system-wide and in each zone; a zone may count synchronous support borrowed from its neighbours.
@@ -352,12 +352,12 @@ Only components that exist in a period count in it. After a solve, the shadow pr
 
 <a id="csp"></a>
 
-# Solar CSP with thermal storage {#csp}
+# 9 Solar CSP with thermal storage {#csp}
 <!-- section {"sources": ["PypsaExpansion/MasterDocs/ModelArchitecture_Pypsa.md §4"]} -->
 
 <a id="csp-why"></a>
 
-## Why CSP needs two linked components {#csp-why}
+## 9.1 Why CSP needs two linked components {#csp-why}
 
 <!-- text {"_list": true} -->
 A CSP plant is two assets working together: a field of mirrors that collects solar heat, and a turbine and storage block that banks that heat and turns it into electricity on demand. The turbine can't charge from the grid, only from its own field, and the heat the field can collect is fixed by a sizing ratio, the [[solar-multiple]], relative to the turbine's power rating.
@@ -368,7 +368,7 @@ Each node has four CSP configurations: a storage-less 0-hour plant (a field and 
 
 <a id="csp-components"></a>
 
-## Turbine and solar field {#csp-components}
+## 9.2 Turbine and solar field {#csp-components}
 
 <!-- text -->
 For every storage configuration, node and vintage, two components are created on the same bus:
@@ -395,7 +395,7 @@ Being on the same bus is what lets the field's generation and the turbine's char
 
 <a id="csp-links"></a>
 
-## Linking the two components {#csp-links}
+## 9.3 Linking the two components {#csp-links}
 
 <!-- text -->
 Two constraints tie each turbine to its field, for every vintage. The **Charge Link** (`Con_CspChargeLink_{turbine}`) makes everything the field generates in an hour charge its turbine in that same hour, exactly, not just up to a limit. This is what rules out charging from anywhere else, including the grid:
@@ -434,7 +434,7 @@ In PyPSA these are two solved quantities per turbine: discharge `p_dispatch` and
 
 <a id="csp-bounds"></a>
 
-## Bounding CSP expansion {#csp-bounds}
+## 9.4 Bounding CSP expansion {#csp-bounds}
 
 <!-- text -->
 A node's CSP resource ceiling, essentially its suitable land and solar resource, is **one limit shared by all four configurations**, not four separate ones. The new capacity built across all configurations at a node is capped by one site-wide constraint (`Con_CspPotential_{Node}_{Year}`), like [@#eq-vintage-bound] but pooling several technologies:
@@ -454,7 +454,7 @@ A node's CSP resource ceiling, essentially its suitable land and solar resource,
 
 <a id="csp-solve-time"></a>
 
-## Why these constraints are added at solve time {#csp-solve-time}
+## 9.5 Why these constraints are added at solve time {#csp-solve-time}
 
 <!-- text -->
 A [[global-constraint]] expresses one shape: the summed capacity of components sharing one carrier at one bus, against a bound. None of the three CSP constraints fits it:
@@ -469,7 +469,7 @@ So they are added to the optimisation problem before every solve ([@#constraint-
 
 <a id="energy-caps"></a>
 
-# Capacity-factor energy caps {#energy-caps}
+# 10 Capacity-factor energy caps {#energy-caps}
 <!-- section {"sources": ["PypsaExpansion/Scripts/RunModel/max_cf_constraints.py", "Scripts/RunModel/MaxCF_Constraints.md"]} -->
 
 > Plants limited by a resource budget can run at full availability in any hour; only their energy over a year or month is capped.
@@ -510,11 +510,11 @@ Bio and OthRE are limited by raw material, Geo by its steam field and hydro by w
 
 <a id="time-resolution"></a>
 
-# Time resolution {#time-resolution}
+# 11 Time resolution {#time-resolution}
 
 <a id="time-sampling"></a>
 
-## Representative days {#time-sampling}
+## 11.1 Representative days {#time-sampling}
 <!-- section {"sources": ["PypsaExpansion/Scripts/V0 model creator/README.md § Time resolution"]} -->
 
 <!-- text {"_list": true} -->
@@ -533,7 +533,7 @@ The chosen days, weights and rescale factors are written to `meta.json` (`time_s
 
 <a id="time-vs-plexos"></a>
 
-## Comparison with PLEXOS sampled chronology {#time-vs-plexos}
+## 11.2 Comparison with PLEXOS sampled chronology {#time-vs-plexos}
 
 <!-- table {"id": "tab-sampling", "caption": "Time sampling compared, all at 3 days per quarter."} -->
 |  | PLEXOS (`Hourly for 3 day per quarter`) | PyPSA `fixed` | PyPSA `sampled` |
@@ -556,19 +556,19 @@ Where PLEXOS's method is not documented (its reduction variant and day weights),
 
 <a id="time-options"></a>
 
-## Other PyPSA options {#time-options}
+## 11.3 Other PyPSA options {#time-options}
 
 <!-- text -->
 PyPSA accepts any weighted snapshot set: full hourly (8,760 h), sub-hourly, or representative days or weeks, as used here. `n.cluster.temporal` adds four aggregation methods for an already-built network: `resample` (averaging), `downsample` (every Nth hour), `segment` (variable-length segments with `tsam`) and `from_snapshot_map` (any user mapping, e.g. `tsam` typical days). PyPSA has no native statistical day selection and no PLEXOS-style rescaling.
 
 <a id="optimisation"></a>
 
-# Optimisation {#optimisation}
+# 12 Optimisation {#optimisation}
 <!-- section {"sources": ["PypsaExpansion/MasterDocs/ModelArchitecture_Pypsa.md §6"]} -->
 
 <a id="pathway-planning"></a>
 
-## Pathway planning and the multi-period flag {#pathway-planning}
+## 12.1 Pathway planning and the multi-period flag {#pathway-planning}
 
 <!-- text {"_list": true} -->
 The model uses PyPSA's **pathway planning**, `n.optimize(multi_investment_periods=True)`, which optimises investment and dispatch across the milestone years as one linear programme, solved with HiGHS.
@@ -584,7 +584,7 @@ Both distortions would understate running costs against build costs over a multi
 
 <a id="npv"></a>
 
-## Discounted objective and capital annuities {#npv}
+## 12.2 Discounted objective and capital annuities {#npv}
 <!-- section {"sources": ["PypsaExpansion/Scripts/RunModel/economics.py", "PypsaExpansion/Scripts/RunModel/Economics.md", "My summary guides/Discounting_Multi_Period.md"]} -->
 
 <!-- text -->
@@ -636,14 +636,14 @@ The weights were plain year counts (a 0% discount rate) and capital was annualis
 
 <a id="lp-milp"></a>
 
-## Linear programme, no unit commitment {#lp-milp}
+## 12.3 Linear programme, no unit commitment {#lp-milp}
 
 <!-- text -->
 Unit commitment (minimum up and down times, start-up costs) can be switched on per component, which turns the LP into a mixed-integer problem. It is not used here, so the model is a pure LP. PyPSA builds the problem with linopy, which also lets custom constraints be added before the solve; this is how the SNSP, CSP and energy-cap constraints are added. The vintage bounds are not added this way: they are native GlobalConstraints saved in the network ([@#constraint-visibility]).
 
 <a id="foresight"></a>
 
-## Perfect foresight and myopic planning {#foresight}
+## 12.4 Perfect foresight and myopic planning {#foresight}
 <!-- section {"sources": ["PypsaExpansion/Scripts/RunModel/myopic.py", "PypsaExpansion/Scripts/RunModel/README.md §1.2.4"]} -->
 
 <!-- text -->
@@ -662,7 +662,7 @@ Storage state of charge is not passed between blocks: across 5-year periods on s
 
 <a id="model-size"></a>
 
-## Model size: milestone years and myopic blocks {#model-size}
+## 12.5 Model size: milestone years and myopic blocks {#model-size}
 <!-- section {"sources": ["MasterDocs/ModelLog.md §2.5, §6.6, §13, §14.2", "PypsaExpansion/Scripts/RunModel/README.md §1.2.4", "PypsaExpansion/Scripts/V0 model creator/config.csv", "PypsaExpansion/Scripts/RunModel/config.csv"]} -->
 
 > The PLEXOS LT Plan steps through 2023–2052 year by year with perfect foresight. HiGHS can't solve that, so PyPSA uses eight milestone years, placed where the inputs change, solved in three myopic blocks.
@@ -693,7 +693,7 @@ A block can't see past its last year. Ending one inside a temporary event (a con
 
 <a id="overnight"></a>
 
-## Not implemented: end-state optimisation {#overnight}
+## 12.6 Not implemented: end-state optimisation {#overnight}
 
 <!-- text {"_list": true} -->
 With no investment periods defined, PyPSA optimises a single "overnight" period. Here that would mean sizing the system for the target year (e.g. 2050) from scratch, with no phased build-out and no vintages. It would need a separate, cut-down builder: one year's data, one component per technology and site, and a plain `n.optimize()`.
@@ -704,7 +704,7 @@ The same single-period shape also serves **hourly dispatch on a solved expansion
 
 <a id="optimisation-summary"></a>
 
-## Summary {#optimisation-summary}
+## 12.7 Summary {#optimisation-summary}
 
 <!-- table {"id": "tab-optimisation", "caption": "Optimisation modes."} -->
 | Mode | Foresight | Coupling across periods | Implemented | PyPSA call |

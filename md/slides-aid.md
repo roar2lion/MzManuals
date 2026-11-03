@@ -1,5 +1,5 @@
 <!-- manual-md 1 | source: content/manuals/slides-aid.json | sha256: 131e00353c967e5c -->
-<!-- Edit the prose freely: headings, paragraphs, list items, table cells, entry values, and the text inside the JSON of a comment line (captions, notes). Keep the front matter, every comment line and the {#id} at the end of each heading: md_to_json uses them to rebuild the JSON. A new paragraph under a heading needs nothing extra; a new list, table or other block starts with a type comment line copied from a block of the same type. A new heading needs its own {#id} (lower case, digits, hyphens). Inline markup is the manual's own: [[term]] glossary, [@#anchor] cross-reference, $`tex`$ maths, **bold**. The Contents list and the <a id> line above each heading are generated: md_to_json refreshes them, edits there are ignored. -->
+<!-- Edit the prose freely: headings, paragraphs, list items, table cells, entry values, and the text inside the JSON of a comment line (captions, notes). Keep the front matter, every comment line and the {#id} at the end of each heading: md_to_json uses them to rebuild the JSON. A new paragraph under a heading needs nothing extra; a new list, table or other block starts with a type comment line copied from a block of the same type. A new heading needs its own {#id} (lower case, digits, hyphens). Inline markup is the manual's own: [[term]] glossary, [@#anchor] cross-reference, $`tex`$ maths, **bold**. The Contents list, the section numbers in the headings and the <a id> line above each heading are generated: md_to_json refreshes them, edits there are ignored. -->
 
 ---
 $schema: "../../schema/manual.schema.json"
@@ -50,14 +50,14 @@ changelog: [{"version": "1.0", "date": "2026-11-03", "changes": ["First version:
 
 <a id="model-size"></a>
 
-# Model size: milestone years and myopic blocks {#model-size}
+# 1 Model size: milestone years and myopic blocks {#model-size}
 <!-- section {"sources": ["MasterDocs/ModelLog.md §2.5, §6.6, §13, §14.2", "PypsaExpansion/Scripts/V0 model creator/config.csv", "PypsaExpansion/Scripts/RunModel/config.csv", "PypsaExpansion/PypsaModel/Model csvs/investment_periods.csv, snapshots.csv"]} -->
 
 > PLEXOS optimises all 30 years of its horizon in one solve. The free HiGHS solver can't, so the PyPSA model uses eight milestone years, solved in three myopic blocks.
 
 <a id="model-size-issue"></a>
 
-## The issue {#model-size-issue}
+## 1.1 The issue {#model-size-issue}
 
 <!-- text {"_list": true} -->
 The PLEXOS [[lt-plan]] treats every year from 2023 to 2052 as an investment step and optimises all 30 together, with perfect foresight, using the commercial Gurobi solver.
@@ -68,7 +68,7 @@ In October 2026 tests, HiGHS solved the whole horizon at 1 sampled day per month
 
 <a id="model-size-solution"></a>
 
-## The solution {#model-size-solution}
+## 1.2 The solution {#model-size-solution}
 
 <!-- list {"ordered": true} -->
 1. **Milestone years.** The investment periods are a list of years set by the user (`milestone_years` in the V0 model creator's `config.csv`). Each milestone stands for the years until the next one, at its own year's data; the last one runs to the end of the horizon. Eight are used, placed where the inputs change.
@@ -89,7 +89,7 @@ In October 2026 tests, HiGHS solved the whole horizon at 1 sampled day per month
 
 <a id="model-size-csvs"></a>
 
-## In the model csvs {#model-size-csvs}
+## 1.3 In the model csvs {#model-size-csvs}
 
 <!-- list -->
 - **`investment_periods.csv`** has one row per milestone: `period`, its NPV weight `objective` ([@#economics-availability]) and `years`, the number of years it stands for (4, 2, 1, 2, 3, 5, 10 and 3: 30 in all).
@@ -102,14 +102,14 @@ More: [@pypsa-architecture#model-size|PyPSA Model Architecture, Model size].
 
 <a id="vintages-persistence"></a>
 
-# Vintages and persistence across blocks {#vintages-persistence}
+# 2 Vintages and persistence across blocks {#vintages-persistence}
 <!-- section {"sources": ["PypsaExpansion/Scripts/V0 model creator/network_builder.py", "PypsaExpansion/Scripts/RunModel/myopic.py", "PypsaExpansion/PypsaModel/Model csvs/generators.csv, global_constraints.csv", "PypsaExpansion/PypsaModel/Compiled models/DES_Solution.nc"]} -->
 
 > PyPSA chooses a component's capacity once for its whole life. So each candidate is split into one component per milestone year, tied together by a capacity limit and locked in block by block.
 
 <a id="vintages-persistence-issue"></a>
 
-## The issue {#vintages-persistence-issue}
+## 2.1 The issue {#vintages-persistence-issue}
 
 <!-- text {"_list": true} -->
 In PLEXOS, a candidate such as `Xp_SolarPV_Center` (new solar PV at the Center node) is one Generator object. Its `Max Units Built` timeline caps the cumulative build, the optimiser can add units in any year at that year's cost, and every unit then runs until its technical life ends.
@@ -120,7 +120,7 @@ Myopic blocks ([@#model-size]) add a second problem: each block is a separate so
 
 <a id="vintages-persistence-solution"></a>
 
-## The solution {#vintages-persistence-solution}
+## 2.2 The solution {#vintages-persistence-solution}
 
 <!-- list -->
 - **One component per milestone year (vintage).** `Xp_SolarPV_Center` becomes `Xp_SolarPV_Center_2023` … `Xp_SolarPV_Center_2050`, eight rows, each with its own `build_year`, the technology's 30-year `lifetime` and the `capital_cost` of its build year. A vintage is in service in period p when build_year ≤ p < build_year + lifetime.
@@ -141,7 +141,7 @@ Myopic blocks ([@#model-size]) add a second problem: each block is a separate so
 
 <a id="vintages-persistence-csvs"></a>
 
-## In the model csvs {#vintages-persistence-csvs}
+## 2.3 In the model csvs {#vintages-persistence-csvs}
 
 <!-- table {"id": "tab-solar-vintages", "caption": "The eight rows of `Xp_SolarPV_Center` in generators.csv (PES), with what the DES solution built.", "notes": "Every row also has `p_nom_extendable` True, `p_nom` 0, `p_nom_max` 54,420.5 MW and `lifetime` 30. The built capacity is `p_nom_opt` in Compiled models/DES_Solution.nc."} -->
 | Vintage | build_year | capital_cost ($/MW-yr) | Built in DES (MW) |
@@ -170,14 +170,14 @@ More: [@pypsa-architecture#vintages|PyPSA Model Architecture, Milestone-wise ass
 
 <a id="sampled-chronology"></a>
 
-# Sampled chronology with peak and energy rescaling {#sampled-chronology}
+# 3 Sampled chronology with peak and energy rescaling {#sampled-chronology}
 <!-- section {"sources": ["PypsaExpansion/Scripts/V0 model creator/README.md, Time resolution", "PypsaExpansion/PypsaModel/Model csvs/snapshots.csv, loads-p_set.csv, meta.json", "PlexoModel/Model data csv/LoadHourly_MW_Nd.Center.csv"]} -->
 
 > Both models optimise 3 representative days per month. PyPSA had to rebuild PLEXOS's way of choosing the days and of rescaling their load to each month's true peak and energy.
 
 <a id="sampled-chronology-issue"></a>
 
-## The issue {#sampled-chronology-issue}
+## 3.1 The issue {#sampled-chronology-issue}
 
 <!-- text {"_list": true} -->
 A year has 8,760 hours, and eight periods of them would be far beyond the solver. Both models therefore optimise only a few representative days, each standing for several real days.
@@ -186,7 +186,7 @@ PLEXOS's LT Plan does this with its sampled chronology (`Hourly for 3 day per mo
 
 <a id="sampled-chronology-solution"></a>
 
-## The solution {#sampled-chronology-solution}
+## 3.2 The solution {#sampled-chronology-solution}
 
 <!-- list {"ordered": true} -->
 1. **Pick the days.** For each period and month, every day is described by its 24 hourly loads at the 3 nodes (72 numbers). Backward scenario reduction drops, one by one, the day whose removal changes the set least, until 3 remain. Each dropped day's weight goes to its nearest kept day.
@@ -208,7 +208,7 @@ Solar and wind profiles are not rescaled, in either model.
 
 <a id="sampled-chronology-csvs"></a>
 
-## In the model csvs {#sampled-chronology-csvs}
+## 3.3 In the model csvs {#sampled-chronology-csvs}
 
 <!-- text -->
 The Center node in July 2030:
@@ -224,21 +224,21 @@ More: [@pypsa-architecture#time-resolution|PyPSA Model Architecture, Time resolu
 
 <a id="custom-constraints"></a>
 
-# Custom constraints written into the solver {#custom-constraints}
+# 4 Custom constraints written into the solver {#custom-constraints}
 <!-- section {"sources": ["PypsaExpansion/Scripts/RunModel/snsp_constraints.py, SNSP_Constraints.md", "PypsaExpansion/Scripts/RunModel/csp_constraints.py, CSP_Constraints.md", "PypsaExpansion/Scripts/RunModel/max_cf_constraints.py, MaxCF_Constraints.md", "PypsaExpansion/PypsaModel/Model csvs/meta.json, generators.csv, storage_units.csv"]} -->
 
 > Three PLEXOS constraint families have no PyPSA equivalent. They are written into the optimisation problem at solve time, so the csvs hold only their inputs.
 
 <a id="custom-constraints-issue"></a>
 
-## The issue {#custom-constraints-issue}
+## 4.1 The issue {#custom-constraints-issue}
 
 <!-- text -->
 PLEXOS expresses rules as Constraint objects: any variables, any coefficients, in every interval or over any period. PyPSA's native [[global-constraint]] covers far fewer shapes, mainly a capacity limit per carrier, bus and period. A component's own `e_sum_min` and `e_sum_max` are fixed MWh over its whole life. None of these can say "every hour, in each zone", tie two components together hour by hour, or cap energy per month in proportion to a capacity that is still being chosen.
 
 <a id="custom-constraints-solution"></a>
 
-## The solution {#custom-constraints-solution}
+## 4.2 The solution {#custom-constraints-solution}
 
 <!-- text -->
 Each family is written straight into PyPSA's optimisation problem (the linopy model) when a solve starts, by its own module in `PypsaExpansion/Scripts/RunModel/`, under PLEXOS's constraint names. Their inputs are stored in `meta.json`, which travels with the csvs.
@@ -248,7 +248,7 @@ These constraints exist only while a solve runs. `global_constraints.csv` doesn'
 
 <a id="custom-snsp"></a>
 
-## SNSP limits {#custom-snsp}
+## 4.3 SNSP limits {#custom-snsp}
 
 <!-- text {"_list": true} -->
 **Issue.** PLEXOS caps inverter-based supply at 70% of total supply in every hour, system-wide (`Con_SnspGlobal`) and in each synchronous area, where an area may count synchronous support borrowed from a neighbour ([[snsp]]). That is an hourly, per-zone rule with extra variables for the borrowed support.
@@ -265,7 +265,7 @@ These constraints exist only while a solve runs. `global_constraints.csv` doesn'
 
 <a id="custom-csp"></a>
 
-## CSP with thermal storage {#custom-csp}
+## 4.4 CSP with thermal storage {#custom-csp}
 
 <!-- text {"_list": true} -->
 **Issue.** PLEXOS models a CSP plant as two objects tied by constraints: a turbine with thermal storage (a Battery) and a Solar Field Generator. The field charges the storage, the field is sized at the [[solar-multiple]] times the turbine, and all CSP configurations at a node share one site potential. PyPSA can't link two components hour by hour.
@@ -286,7 +286,7 @@ The 12- and 15-hour configurations follow the same pattern (`p_min_pu` −4.1 an
 
 <a id="custom-energy-caps"></a>
 
-## Capacity-factor energy caps {#custom-energy-caps}
+## 4.5 Capacity-factor energy caps {#custom-energy-caps}
 
 <!-- text {"_list": true} -->
 **Issue.** Hydro is limited by water, Bio by fuel, Geo by its steam field. PLEXOS caps their energy, not their hourly output: `Max Capacity Factor Month` for hydro and `Max Capacity Factor Year` for Bio, Geo and OthRE. The plants can therefore run at full availability in the evening and back off at midday. PyPSA's only energy bound, `e_sum_max`, is a fixed MWh over a component's life: it can't follow a capacity that is still being chosen, or apply per month.
@@ -305,14 +305,14 @@ More: [@pypsa-architecture#snsp|PyPSA Model Architecture, SNSP limits], [@pypsa-
 
 <a id="losses-markets"></a>
 
-# Corridor losses, token wheeling and cross-border markets {#losses-markets}
+# 5 Corridor losses, token wheeling and cross-border markets {#losses-markets}
 <!-- section {"sources": ["PypsaExpansion/Scripts/RunModel/intercon_losses.py, config.csv", "PypsaExpansion/Scripts/V0 model creator/README.md", "PypsaExpansion/PypsaModel/Model csvs/links.csv, generators.csv, global_constraints.csv"]} -->
 
 > A two-way PyPSA link can't carry a loss or a flow charge, and PyPSA has no market object. Corridors are split into one-way links at solve time, and markets are emulated as generators.
 
 <a id="losses-markets-corridors"></a>
 
-## Corridors: losses and wheeling {#losses-markets-corridors}
+## 5.1 Corridors: losses and wheeling {#losses-markets-corridors}
 
 <!-- text {"_list": true} -->
 **Issue.** PLEXOS loses 5% of the power sent on each internal Line (`Loss Incr` 0.05 each way) and charges 0.01 $/MWh each way (`Wheeling Charge`), a token cost whose only job is to stop the solver shipping surplus into a region that is itself in surplus. A two-way PyPSA Link applies its `efficiency` and `marginal_cost` to the signed flow: sending backwards, a 5% loss would become a 5% gain and the charge a rebate.
@@ -334,7 +334,7 @@ More: [@pypsa-architecture#snsp|PyPSA Model Architecture, SNSP limits], [@pypsa-
 
 <a id="losses-markets-markets"></a>
 
-## Cross-border markets {#losses-markets-markets}
+## 5.2 Cross-border markets {#losses-markets-markets}
 
 <!-- text {"_list": true} -->
 **Issue.** PLEXOS models cross-border trade with Market objects: a price, a MW cap on sales or purchases, and an optional yearly minimum (take-or-pay). PyPSA has no market component.
@@ -353,14 +353,14 @@ More: [@pypsa-architecture#corridors|PyPSA Model Architecture, Internodal corrid
 
 <a id="economics-availability"></a>
 
-# Economics and availability {#economics-availability}
+# 6 Economics and availability {#economics-availability}
 <!-- section {"sources": ["PypsaExpansion/Scripts/RunModel/economics.py, Economics.md", "PypsaExpansion/PypsaModel/Model csvs/investment_periods.csv, generators.csv, storage_units.csv, generators-p_max_pu.csv, generators-marginal_cost.csv, meta.json"]} -->
 
 > PyPSA doesn't discount across periods, annualise build costs or derate for outages by itself. All three are set from PLEXOS's rules in the csvs.
 
 <a id="economics-availability-issue"></a>
 
-## The issue {#economics-availability-issue}
+## 6.1 The issue {#economics-availability-issue}
 
 <!-- text {"_list": true} -->
 PLEXOS's LT Plan minimises the net present value of all costs at a 10% discount rate, with 2023 as year 0. It turns each build cost into a yearly charge with the capital recovery factor ([[crf]]) over the economic life, at the asset's WACC or else the discount rate, plus fixed O&M. And it derates every unit's capacity by its forced outage rate (FOR) and maintenance rate (MR).
@@ -369,7 +369,7 @@ PyPSA does none of this by itself: a period's costs count once unless the period
 
 <a id="economics-availability-solution"></a>
 
-## The solution {#economics-availability-solution}
+## 6.2 The solution {#economics-availability-solution}
 
 <!-- list -->
 - **Period weights.** Each period's `objective` weight is the sum of the yearly discount factors over the years it stands for, so its costs count once per year, discounted.
@@ -395,7 +395,7 @@ c_v = I_v\, \frac{r\,(1+r)^{n_v}}{(1+r)^{n_v} - 1} + F_v
 
 <a id="economics-availability-csvs"></a>
 
-## In the model csvs {#economics-availability-csvs}
+## 6.3 In the model csvs {#economics-availability-csvs}
 
 <!-- table {"id": "tab-weights", "caption": "investment_periods.csv: the NPV weight of each period.", "notes": "Check, 2023: 1 + 1.1^−1 + 1.1^−2 + 1.1^−3 = 3.487. The 2040 period weighs as much as 2035 because it stands for ten years; 2050 stands for 2050–2052 only."} -->
 | period | years | objective |
@@ -428,7 +428,7 @@ More: [@pypsa-architecture#npv|PyPSA Model Architecture, Discounted objective an
 
 <a id="csv-map"></a>
 
-# The model csvs at a glance {#csv-map}
+# Appendix A The model csvs at a glance {#csv-map}
 <!-- section {"sources": ["PypsaExpansion/PypsaModel/Model csvs/"]} -->
 
 <!-- text -->

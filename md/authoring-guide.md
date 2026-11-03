@@ -1,5 +1,5 @@
 <!-- manual-md 1 | source: content/manuals/authoring-guide.json | sha256: b8c7b3f3f447de58 -->
-<!-- Edit the prose freely: headings, paragraphs, list items, table cells, entry values, and the text inside the JSON of a comment line (captions, notes). Keep the front matter, every comment line and the {#id} at the end of each heading: md_to_json uses them to rebuild the JSON. A new paragraph under a heading needs nothing extra; a new list, table or other block starts with a type comment line copied from a block of the same type. A new heading needs its own {#id} (lower case, digits, hyphens). Inline markup is the manual's own: [[term]] glossary, [@#anchor] cross-reference, $`tex`$ maths, **bold**. The Contents list and the <a id> line above each heading are generated: md_to_json refreshes them, edits there are ignored. -->
+<!-- Edit the prose freely: headings, paragraphs, list items, table cells, entry values, and the text inside the JSON of a comment line (captions, notes). Keep the front matter, every comment line and the {#id} at the end of each heading: md_to_json uses them to rebuild the JSON. A new paragraph under a heading needs nothing extra; a new list, table or other block starts with a type comment line copied from a block of the same type. A new heading needs its own {#id} (lower case, digits, hyphens). Inline markup is the manual's own: [[term]] glossary, [@#anchor] cross-reference, $`tex`$ maths, **bold**. The Contents list, the section numbers in the headings and the <a id> line above each heading are generated: md_to_json refreshes them, edits there are ignored. -->
 
 ---
 $schema: "../../schema/manual.schema.json"
@@ -29,7 +29,7 @@ changelog: [{"version": "1.0", "date": "2026-10-22", "changes": ["First version 
 
 <a id="workflow"></a>
 
-# Workflow {#workflow}
+# 1 Workflow {#workflow}
 
 > One JSON file per manual. The builder checks it, then renders the site and the PDF from it.
 
@@ -47,7 +47,7 @@ The build stops on any problem: a schema error, an unknown glossary term, a brok
 
 <a id="structure"></a>
 
-# Manual structure {#structure}
+# 2 Manual structure {#structure}
 <!-- section {"sources": ["schema/manual.schema.json"]} -->
 
 <!-- text -->
@@ -68,7 +68,7 @@ A section can also carry `summary` (a lead paragraph) and `sources`, the workspa
 
 <a id="inline"></a>
 
-# Inline syntax {#inline}
+# 3 Inline syntax {#inline}
 
 <!-- table {"caption": "Inline markup inside any text field."} -->
 | Write | Result |
@@ -89,7 +89,7 @@ Inline maths uses GitLab's `` $`…`$ `` form, so a plain `$` (as in $/kW) is ne
 
 <a id="blocks"></a>
 
-# Content blocks {#blocks}
+# 4 Content blocks {#blocks}
 
 > Each entry in a section's `blocks` has a `type`. Any block may have an `id`; tables, figures, diagrams and equations are then numbered and can be cited.
 
@@ -160,7 +160,7 @@ flowchart LR
 
 <a id="glossary-use"></a>
 
-# Glossary {#glossary-use}
+# 5 Glossary {#glossary-use}
 
 <!-- text {"_list": true} -->
 Terms live once, in `content/glossary.json`, and every manual shares them. Reference a term as `[[id]]`. Online the term links to the glossary page, which lists the manuals that use it. Each PDF gets a *Terms used* appendix with only its own terms, so it stands on its own.
@@ -171,7 +171,7 @@ Add a term before you use it; an unknown id stops the build.
 
 <a id="publishing"></a>
 
-# Publishing setup {#publishing}
+# Appendix A Publishing setup {#publishing}
 
 <!-- list {"ordered": true} -->
 1. Create an empty GitHub repository and add it as this repo's `origin`.
