@@ -98,6 +98,7 @@ The JSON is the source of every manual, but it is hard to read and edit as prose
    - A new list, table or other block starts with a type comment line (e.g. `<!-- list -->`) copied from a block of the same type.
    - A new section needs a heading ending in a new `{#id}` (lower case, digits, hyphens).
    - Captions, notes and sources sit in the JSON of a comment line; edit them there.
+   - The **Contents** list at the top links to every section and subsection (Ctrl+click in the editor, or click in the Markdown preview). It and the `<a id="…">` line above each heading are generated: `md_to_json` refreshes them, so a new or renamed heading gets its link on the next conversion.
 3. **`md_to_json.cmd`**: pick the files (Enter = all). Each is written back to its JSON and validated with `scripts/builder/build.py --check`. If validation fails, the JSON is left as it was and the problems are listed.
 4. Check the JSON diff, run `build.cmd` to see the result, then commit as usual.
 

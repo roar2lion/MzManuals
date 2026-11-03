@@ -15,7 +15,7 @@ import json
 import subprocess
 import sys
 
-from manual_md import (MD_DIR, ROOT, FormatError, file_hash, from_md, same, set_header_sha,
+from manual_md import (MD_DIR, ROOT, FormatError, file_hash, from_md, same, set_header_sha, with_nav,
                        write_json_text)
 
 BUILD = ROOT / "scripts" / "builder" / "build.py"
@@ -39,6 +39,13 @@ def validate():
     return r.returncode == 0, (r.stdout + r.stderr).strip()
 
 
+def refresh_md(md_path, text, manual, sha):
+    """Point the md file at the JSON as now written, and refresh its Contents list and heading anchors."""
+    new = with_nav(set_header_sha(text, sha), manual)
+    if new != text:
+        md_path.write_text(new, encoding="utf-8", newline="\n")
+
+
 def convert(md_path, yes):
     text = md_path.read_text(encoding="utf-8")
     manual, head = from_md(text)
@@ -48,8 +55,7 @@ def convert(md_path, yes):
     if old_text:
         if same(manual, json.loads(old_text)):
             print(f"  {md_path.name}: no changes")
-            if head["sha"] != file_hash(target):
-                md_path.write_text(set_header_sha(text, file_hash(target)), encoding="utf-8", newline="\n")
+            refresh_md(md_path, text, manual, file_hash(target))
             return True
         if head["sha"] != file_hash(target) and not yes:
             ans = input(f"  {rel} has changed since {md_path.name} was made; writing would undo those changes. "
@@ -68,7 +74,7 @@ def convert(md_path, yes):
         print(f"  {md_path.name}: the result doesn't validate, so {rel} was left unchanged:")
         print("    " + report.replace("\n", "\n    "))
         return False
-    md_path.write_text(set_header_sha(text, file_hash(target)), encoding="utf-8", newline="\n")
+    refresh_md(md_path, text, manual, file_hash(target))
     diff = [l for l in difflib.unified_diff(old_text.splitlines(), new_text.splitlines(), lineterm="", n=0)
             if l[:1] in "+-" and l[:3] not in ("+++", "---")]
     added = sum(1 for l in diff if l.startswith("+"))

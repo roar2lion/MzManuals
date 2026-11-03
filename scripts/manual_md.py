@@ -60,7 +60,9 @@ EDIT_NOTE = ("<!-- Edit the prose freely: headings, paragraphs, list items, tabl
              "the JSON. A new paragraph under a heading needs nothing extra; a new list, table or other "
              "block starts with a type comment line copied from a block of the same type. A new heading "
              "needs its own {#id} (lower case, digits, hyphens). Inline markup is the manual's own: "
-             "[[term]] glossary, [@#anchor] cross-reference, $`tex`$ maths, **bold**. -->")
+             "[[term]] glossary, [@#anchor] cross-reference, $`tex`$ maths, **bold**. The Contents list and "
+             "the <a id> line above each heading are generated: md_to_json refreshes them, edits there are "
+             "ignored. -->")
 
 
 class FormatError(ValueError):
@@ -153,7 +155,75 @@ def to_md(manual, source_rel, sha):
             out += _section(s, 1)
     while out and not out[-1]:
         out.pop()
-    return "\n".join(out) + "\n"
+    return with_nav("\n".join(out) + "\n", manual)
+
+
+# ---------------------------------------------------------------- navigation (generated)
+TOC_START, TOC_END = "<!-- toc -->", "<!-- /toc -->"
+ANCHOR_RE = re.compile(r'^<a id="[^"]*"></a>\s*$')
+
+
+def _toc_lines(manual):
+    out = [TOC_START, "**Contents**", ""]
+
+    def walk(secs, nums, depth):
+        for s, (label, base) in zip(secs, nums):
+            title = s["title"].replace("[", "\\[").replace("]", "\\]")
+            out.append("  " * depth + f"- [{label} {title}](#{s['id']})")
+            subs = s.get("sections", [])
+            walk(subs, [(f"{base}.{j}", f"{base}.{j}") for j in range(1, len(subs) + 1)], depth + 1)
+
+    secs = manual.get("sections", [])
+    walk(secs, [(str(i), str(i)) for i in range(1, len(secs) + 1)], 0)
+    apps = manual.get("appendices", [])
+    walk(apps, [(f"Appendix {chr(65 + i)}", chr(65 + i)) for i in range(len(apps))], 0)
+    return out + [TOC_END]
+
+
+def with_nav(text, manual):
+    """(Re)write the generated Contents list and the <a id> anchor above each heading."""
+    out, fence, in_toc, fm_seen, fm_end, skip_blank = [], None, False, 0, None, False
+    for ln in text.split("\n"):
+        st = ln.strip()
+        if fence:
+            out.append(ln)
+            m = FENCE_RE.match(st)
+            if m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence) and not m.group(2).strip():
+                fence = None
+            continue
+        if fm_end is None:
+            out.append(ln)
+            if st == "---":
+                fm_seen += 1
+                if fm_seen == 2:
+                    fm_end = len(out)
+            continue
+        if skip_blank:
+            skip_blank = False
+            if not st:
+                continue
+        if st == TOC_START:
+            in_toc = True
+            continue
+        if in_toc:
+            in_toc = st != TOC_END
+            continue
+        if ANCHOR_RE.match(ln):
+            skip_blank = True
+            continue
+        h = HEADING_RE.match(ln)
+        if h:                                    # the blank line is needed, or the heading renders as text
+            out += [f'<a id="{h.group(3)}"></a>', ""]
+        out.append(ln)
+        m = FENCE_RE.match(st)
+        if m:
+            fence = m.group(1)
+    if fm_end is None:
+        return text
+    rest = out[fm_end:]
+    while rest and not rest[0].strip():
+        rest.pop(0)
+    return "\n".join(out[:fm_end] + [""] + _toc_lines(manual) + [""] + rest)
 
 
 def _section(s, depth):
@@ -335,7 +405,7 @@ def from_md(text):
 
 def _tokens(lines, start):
     """Split the body into ('heading', depth, title, id, line) / ('appendices',) / ('block', type, attrs, body, line)."""
-    toks, cur, fence = [], None, None
+    toks, cur, fence, in_toc = [], None, None, False
     for n in range(start, len(lines)):
         ln = lines[n]
         if fence:
@@ -343,6 +413,11 @@ def _tokens(lines, start):
             m = FENCE_RE.match(ln.strip())
             if m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence) and not m.group(2).strip():
                 fence = None
+            continue
+        if ln.strip() == TOC_START or in_toc:     # generated navigation: not part of the manual
+            in_toc = ln.strip() != TOC_END
+            continue
+        if ANCHOR_RE.match(ln):
             continue
         h = HEADING_RE.match(ln)
         if h:
