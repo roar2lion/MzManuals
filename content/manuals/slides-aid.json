@@ -95,7 +95,7 @@
     {
       "id": "vintages-persistence",
       "title": "Vintages and persistence across blocks",
-      "summary": "PyPSA chooses a component's capacity once for its whole life. So each candidate is split into one component per milestone year, tied together by a capacity limit and locked in block by block.",
+      "summary": "We need vintages to implement PLEXOS-style phased capacity build-out across the timeline at time-varying costs, overcoming PyPSA's single-decision-per-object rule. We need clamps to allow sequential myopic blocks to start from previous solves without erasing history or resetting resource ceilings.",
       "sections": [
         {
           "id": "vintages-persistence-issue",
@@ -104,9 +104,9 @@
             {
               "type": "text",
               "text": [
-                "In PLEXOS, a candidate such as `Xp_SolarPV_Center` (new solar PV at the Center node) is one Generator object. Its `Max Units Built` timeline caps the cumulative build, the optimiser can add units in any year at that year's cost, and every unit then runs until its technical life ends.",
-                "PyPSA gives each component a single capacity variable, `p_nom`, chosen once and held from its `build_year` until `build_year + lifetime`. One component can't be built partly in 2029 and partly in 2040, each part at its own year's cost.",
-                "Myopic blocks ([@#model-size]) add a second problem: each block is a separate solve, so it must be told what earlier blocks built and how much of the potential is left."
+                "In PLEXOS, an expansion candidate such as `Xp_SolarPV_Center` (new solar PV at the Center node) is one single persistent Generator object. Its `Project Start Date` defines when expansion opens, and its `Max Units Built` timeline caps cumulative build. The solver can add units at different milestone years at that year's capital cost, and units built in 2050 only incur capital annuities starting in 2050.",
+                "PyPSA gives each component only **one scalar capacity decision variable (`p_nom`)** for its entire existence. In PyPSA, `build_year` is **not** an \"available from\" date; it is the **exact commissioning year**. An asset with `build_year = 2030` pays its annualized capital cost in every period it is active ($2030 \\le p < 2030 + \\text{lifetime}$). The solver cannot \"wait\" to build a 2030 asset in 2050: doing so in a multi-period solve would incur 20 years of wasted capital annuities (2030–2049) for an idle plant. One component cannot be built in increments across time at time-varying capital costs.",
+                "Myopic blocks ([@#model-size]) introduce a second, critical challenge: each block is a completely separate optimization run. PyPSA has no internal function to carry solved capacities (`p_nom_opt`) forward into subsequent solves. Without explicit state management, sequential solves face two fatal traps: - **Trap 1 (Leaving past variables unclamped):** A subsequent block (e.g. 2040–2050) only evaluates snapshots in its own window, so its objective function only bills capital costs for 2040–2050. If past vintages (`_2030`) were left unclamped, the 2050 solver could build the 2030 vintage in 2050 to dodge 20 years of historical capital annuities (paying only the 2050 annuity slice!), or retroactively delete a 2030 gas plant to avoid 2050 fixed O&M. - **Trap 2 (Setting past builds to non-extendable):** The standard tutorial approach sets `p_nom_extendable = False` and `p_nom = p_nom_opt`. However, PyPSA's cumulative expansion limits (`tech_capacity_expansion_limit`) and custom constraints (such as CSP site potential) **only sum extendable components**. Flipping past builds to fixed assets causes the resource ceiling to completely forget that capacity was ever built, resetting site headroom and allowing subsequent blocks to overbuild past the true resource potential!"
               ]
             }
           ]
@@ -118,10 +118,18 @@
             {
               "type": "list",
               "items": [
-                "**One component per milestone year (vintage).** `Xp_SolarPV_Center` becomes `Xp_SolarPV_Center_2023` … `Xp_SolarPV_Center_2050`, eight rows, each with its own `build_year`, the technology's 30-year `lifetime` and the `capital_cost` of its build year. A vintage is in service in period p when build_year ≤ p < build_year + lifetime.",
-                "**Bound together.** A native [[global-constraint]] per period caps the vintages in service at PLEXOS's cumulative potential. Where PLEXOS has a planned minimum, a second row sets a floor.",
-                "**Locked in across blocks.** Once a block is solved, every vintage it built gets `p_nom_min = p_nom_max =` its solved capacity but stays extendable, so the potential limits, which count extendable capacity, keep counting it. Vintages of later blocks are held at 0 meanwhile.",
-                "**Existing plants follow the same pattern with fixed rows.** `SolarPV_Center_2023` … `SolarPV_Center_2040` each hold 40.5 MW, with `lifetime` equal to the years of their period (4, 2, 1, 2, 3, 5 and 10), so each row covers exactly one period. There is no 2050 row: the plant has retired by then."
+                "**One component per milestone year (vintage).** `Xp_SolarPV_Center` becomes `Xp_SolarPV_Center_2023` … `Xp_SolarPV_Center_2050` (eight rows in `generators.csv`). Each vintage carries its own `build_year`, the technology's 30-year `lifetime`, and the specific `capital_cost` of its commissioning year. A vintage is in service in period p when build_year ≤ p < build_year + lifetime.",
+                "**Bound together across time.** A native [[global-constraint]] (`tech_capacity_expansion_limit`) per period caps the sum of all active vintages at PLEXOS's cumulative `PotentialCapacity` ceiling. Where PLEXOS specifies a planned minimum, a second constraint sets a commitment floor.",
+                "**No clamping within a block (or in perfect foresight).** Perfect foresight is conceptually a single block spanning the entire 30-year horizon. Within any single block solve, all years are co-optimized simultaneously, so PyPSA's native equations keep active vintages online across that block's timeline without external intervention.",
+                {
+                  "text": "**Inter-block clamping (`myopic.py`).** To link sequential myopic blocks without falling into either trap, `myopic.py` categorizes vintages before each block solve:",
+                  "items": [
+                    "**Past vintages (`build_year < block_start`):** Clamped to their solved values (`p_nom_min = p_nom_max = p_nom_opt`) while **retaining `p_nom_extendable = True`**. This freezes historical decisions in stone (preventing retroactively dodging CAPEX or deleting past builds) while ensuring the cumulative expansion limit continues counting them against remaining site headroom.",
+                    "**Future vintages (`build_year > block_end`):** Pinned to zero (`p_nom_min = p_nom_max = 0`) so future assets cannot be used before their commissioning window.",
+                    "**Current block vintages:** Open to full optimization (`p_nom_min = 0`, `p_nom_max = Potential Ceiling`)."
+                  ]
+                },
+                "**Existing plants follow the same pattern with fixed rows.** `SolarPV_Center_2023` … `SolarPV_Center_2040` each hold 40.5 MW, with `lifetime` equal to the years of their period (4, 2, 1, 2, 3, 5, and 10), so each row covers exactly one period. There is no 2050 row because the existing plant retires before then."
               ]
             },
             {
@@ -161,11 +169,26 @@
             {
               "type": "list",
               "items": [
-                "**The per-row maximum is deliberately loose.** Every row's `p_nom_max` is the whole potential, 54,420.5 MW; the real limit is on their sum.",
-                "**`global_constraints.csv` holds the sum limits**: `PotCap_Xp_SolarPV_Center_2023` … `_2050`, with `type` tech_capacity_expansion_limit, `bus` Center, `carrier_attribute` SolarPV and `sense` <=. Their `constant` is 54,420.5 MW from 2027 and 0 in 2023, which is how PLEXOS's \"no new build before 2027\" reaches PyPSA.",
+                "**The per-row maximum is deliberately loose.** Every row's `p_nom_max` in `generators.csv` is the whole potential, 54,420.5 MW; the real limit is enforced on their cumulative active sum.",
+                "**`global_constraints.csv` holds the sum limits**: `PotCap_Xp_SolarPV_Center_2023` … `_2050`, with `type` tech_capacity_expansion_limit, `bus` Center, `carrier_attribute` SolarPV and `sense` <=. Their `constant` is 54,420.5 MW from 2027 and 0 in 2023, which is how PLEXOS's \"no new build before 2027\" constraint reaches PyPSA.",
                 "**Planned minimums are `_min` rows** with `sense` >=, e.g. `PotCap_Xp_NGCCG_South_2027_min` ≥ 450 MW.",
                 "**`generators-p_max_pu.csv` has one column per vintage** (`Xp_SolarPV_Center_2030` and so on): the hourly solar profile × availability ([@#economics-availability]).",
-                "**Persistence shows in the solution, not in the csvs.** The 2029 vintage (1,888 MW) was decided in block 1 and held fixed through blocks 2 and 3. In 2050 all five built vintages are in service: 13,503 MW, well within the 54,420.5 MW potential."
+                "**Persistence shows in the solution, not in the raw model csvs.** The 2029 vintage (1,888 MW) was decided in Block 1 and held clamped through Blocks 2 and 3. In 2050, all five built vintages are in service simultaneously: 13,503 MW total, well within the 54,420.5 MW potential.",
+                {
+                  "text": "**Clean restoration after solve (Inputs vs. Outputs).** A reader might wonder: *if `myopic.py` clamped `p_nom_min` and `p_nom_max` during the run, where does the built capacity actually live, and why restore the bounds at the end?*",
+                  "items": [
+                    "**Inputs vs. Outputs:** In PyPSA, `p_nom_min` and `p_nom_max` are **input parameters** (the allowable range: 0 to 54,420.5 MW). The solver's optimized decision is written into **`p_nom_opt`** (the **output** variable: 1,888 MW).",
+                    "**Why clamping was temporary:** During Blocks 2 and 3, `myopic.py` temporarily set `p_nom_min = p_nom_max = p_nom_opt` purely as an operational steering wheel to force the solver to respect earlier decisions without losing extendability.",
+                    {
+                      "text": "**Why restoration is necessary:** Once all blocks finish, `myopic.py` restores `p_nom_min` and `p_nom_max` back to their pristine baseline (0 and 54,420.5 MW) while leaving `p_nom_opt = 1,888 MW` untouched. If it did not:",
+                      "items": [
+                        "*Falsified assumptions:* The saved file would show `p_nom_min = p_nom_max = 1,888 MW`, making it appear as though the user hardcoded 1,888 MW upfront rather than the model optimizing it.",
+                        "*Broken capacity accounting:* Downstream tools (`LtResultPreparer_Pypsa`) calculate leftover site potential by evaluating `p_nom_max - p_nom_opt`. Leaving bounds clamped at 1,888 MW would yield $1,888 - 1,888 = 0$, falsely reporting to dashboards that the site's resource potential was 100% depleted!"
+                      ]
+                    },
+                    "Restoring the bounds ensures the output file (`Compiled models/{Scenario}_Solution.nc`) cleanly distinguishes between what was an input assumption and what was an optimized outcome, reading identically to a single multi-period solve."
+                  ]
+                }
               ]
             },
             {
