@@ -1,4 +1,4 @@
-<!-- manual-md 1 | source: content/manuals/slides-aid.json | sha256: adddef477d5e3539 -->
+<!-- manual-md 1 | source: content/manuals/slides-aid.json | sha256: 9f735e8b0d54e905 -->
 <!-- Edit the prose freely: headings, paragraphs, list items, table cells, entry values, and the text inside the JSON of a comment line (captions, notes). Keep the front matter, every comment line and the {#id} at the end of each heading: md_to_json uses them to rebuild the JSON. A new paragraph under a heading needs nothing extra; a new list, table or other block starts with a type comment line copied from a block of the same type. A new heading needs its own {#id} (lower case, digits, hyphens). Inline markup is the manual's own: [[term]] glossary, [@#anchor] cross-reference, $`tex`$ maths, **bold**. The Contents list, the section numbers in the headings and the <a id> line above each heading are generated: md_to_json refreshes them, edits there are ignored. -->
 
 ---
@@ -105,7 +105,7 @@ More: [@pypsa-architecture#model-size|PyPSA Model Architecture, Model size].
 # 2 Vintages and persistence across blocks {#vintages-persistence}
 <!-- section {"sources": ["PypsaExpansion/Scripts/V0 model creator/network_builder.py", "PypsaExpansion/Scripts/RunModel/myopic.py", "PypsaExpansion/PypsaModel/Model csvs/generators.csv, global_constraints.csv", "PypsaExpansion/PypsaModel/Compiled models/DES_Solution.nc"]} -->
 
-> We need vintages to implement PLEXOS-style phased capacity build-out across the timeline at time-varying costs, overcoming PyPSA's single-decision-per-object rule. We need clamps to allow sequential myopic blocks to start from previous solves without erasing history or resetting resource ceilings.
+> We need vintages to overcome PyPSA's inherent single-decision-per-object rule which optimize MW build out but not the deployment timeline. We need clamps to allow sequential myopic blocks to start from previous solve's results instead of blank slate.
 
 <a id="vintages-persistence-issue"></a>
 

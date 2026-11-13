@@ -95,7 +95,7 @@
     {
       "id": "vintages-persistence",
       "title": "Vintages and persistence across blocks",
-      "summary": "We need vintages to implement PLEXOS-style phased capacity build-out across the timeline at time-varying costs, overcoming PyPSA's single-decision-per-object rule. We need clamps to allow sequential myopic blocks to start from previous solves without erasing history or resetting resource ceilings.",
+      "summary": "We need vintages to overcome PyPSA's inherent single-decision-per-object rule which optimize MW build out but not the deployment timeline. We need clamps to allow sequential myopic blocks to start from previous solve's results instead of blank slate.",
       "sections": [
         {
           "id": "vintages-persistence-issue",
